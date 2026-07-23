@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.4 / 224", 'versionCode = 224' in build and 'versionName = "2.2.4"' in build)
+check("Version 2.2.5 / 225", 'versionCode = 225' in build and 'versionName = "2.2.5"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -74,6 +74,36 @@ check("No sunrise countdown on live alarm screen", 'Text(\n                "Sunr
 check("Live alarm header is pinned high", "Modifier.width(220.dp).height(64.dp)" in alarm_ui and ".padding(horizontal = 18.dp, vertical = 6.dp)" in alarm_ui)
 check("Live challenge card is compact", "modifier = Modifier.fillMaxWidth(.90f)" in alarm_ui and "Modifier.padding(horizontal = 16.dp, vertical = 14.dp)" in alarm_ui)
 check("No live alarm progress bar", "LinearProgressIndicator" not in alarm_ui and "stepProgressFraction" not in alarm_ui)
+check(
+    "Sunrise fills the complete display",
+    "enableEdgeToEdge" in alarm_ui
+    and "SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)" in alarm_ui
+    and "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" in alarm_ui
+    and ".statusBarsPadding()" in alarm_ui
+    and ".navigationBarsPadding()" in alarm_ui
+    and "drawRect(Color(0xFF041426)" not in alarm_ui,
+)
+check(
+    "First-run name input has no explanatory footer",
+    'supportingText = { Text("Used in your morning, afternoon or evening greeting") }' not in onboarding,
+)
+check(
+    "Onboarding routine steps are pencil-editable",
+    "editingStep = step" in onboarding
+    and "Icons.Outlined.Edit" in onboarding
+    and "StepEditorDialog(" in onboarding,
+)
+check(
+    "Onboarding question topics are configurable",
+    "Topic.entries.chunked(3)" in app_ui
+    and "questionsRequired" in onboarding
+    and "topics = listOf(Topic.MATHS)" in onboarding,
+)
+check(
+    "Routine and settings cards use pale blue surfaces",
+    onboarding.count("primaryContainer.copy(alpha = .72f)") >= 2
+    and app_ui.count("primaryContainer.copy(alpha = .72f)") >= 5,
+)
 check("Per-window brightness ramp", "screenBrightness" in alarm_ui)
 check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "red", "orange", "daylight", "SunriseHorizon"]))
 check("Selected sneezing-cat branding used universally", "R.drawable.tazalarm_cat_only" in main_source and 'Text(\n            "TAZLARM"' in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_cat_only.png").is_file())

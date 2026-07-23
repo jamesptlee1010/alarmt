@@ -1,22 +1,9 @@
-# TAZLARM v2.2.4 validation
+# TAZLARM v2.2.5 validation
 
-Package validation passed **62/62 checks**.
-
-Key checks added for this build:
-
-- Live alarm TAZLARM header uses a compact 64dp row at the top of the safe content area.
-- Live challenge card is narrower and uses reduced internal padding.
-- The live alarm progress bar and its progress-calculation helper are absent.
-- Two-minute minimum sunrise remains active.
-- No sunrise countdown or remaining-time label is shown.
-- Version and workflow artifact names are v2.2.4 / versionCode 224.
-
-The Android project was not compiled inside this packaging container because a Gradle executable and Android SDK are not installed here. The included GitHub Actions workflow performs the authoritative release unit tests and APK compilation.
-
-## Structural validation output
+Structural and targeted package validation passed **67/67 checks**.
 
 ```text
-TAZLARM package validation: 62/62 checks passed
+TAZLARM package validation: 67/67 checks passed
 [PASS] Required file: .github/workflows/build-tazalarm.yml
 [PASS] Required file: app/build.gradle.kts
 [PASS] Required file: app/src/main/AndroidManifest.xml
@@ -32,7 +19,7 @@ TAZLARM package validation: 62/62 checks passed
 [PASS] Required file: personal-release.keystore
 [PASS] All Android XML parses — 20 XML files
 [PASS] Application ID retained
-[PASS] Version 2.2.4 / 224
+[PASS] Version 2.2.5 / 225
 [PASS] TAZLARM app label
 [PASS] Alarm notification channel description
 [PASS] Exact alarm permission
@@ -52,6 +39,11 @@ TAZLARM package validation: 62/62 checks passed
 [PASS] Live alarm header is pinned high
 [PASS] Live challenge card is compact
 [PASS] No live alarm progress bar
+[PASS] Sunrise fills the complete display
+[PASS] First-run name input has no explanatory footer
+[PASS] Onboarding routine steps are pencil-editable
+[PASS] Onboarding question topics are configurable
+[PASS] Routine and settings cards use pale blue surfaces
 [PASS] Per-window brightness ramp
 [PASS] Night-to-day horizon renderer
 [PASS] Selected sneezing-cat branding used universally
@@ -80,3 +72,5 @@ TAZLARM package validation: 62/62 checks passed
 [PASS] No generated build/cache folders
 [PASS] Release keystore opens and alias exists
 ```
+
+The GitHub Actions workflow remains the authoritative full Android compilation, unit-test, APK-signing and signature-verification step.

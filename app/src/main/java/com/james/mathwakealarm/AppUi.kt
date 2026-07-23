@@ -653,7 +653,11 @@ private fun RoutineStepCard(
     onUp: () -> Unit,
     onDown: () -> Unit
 ) {
-    Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)
+    ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -680,7 +684,7 @@ private fun RoutineStepCard(
 }
 
 @Composable
-private fun StepEditorDialog(
+fun StepEditorDialog(
     step: RoutineStep,
     onDismiss: () -> Unit,
     onScan: () -> Unit,
@@ -883,7 +887,11 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
     ScreenContainer(padding) {
         PageHeader("Settings", "Personalisation, appearance and Android reliability checks.")
         SectionTitle("PROFILE")
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(Modifier.padding(18.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Your name") }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
@@ -891,7 +899,11 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
             }
         }
         SectionTitle("APPEARANCE")
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(Modifier.padding(12.dp)) {
                 ThemeChoice(ThemeMode.SYSTEM, "Follow phone", Icons.Outlined.Tune, appState.themeMode)
                 ThemeChoice(ThemeMode.LIGHT, "Light mode", Icons.Outlined.LightMode, appState.themeMode)
@@ -929,7 +941,11 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
                 context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             }
         }
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(Modifier.padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.WbSunny, null, tint = MaterialTheme.colorScheme.primary)
@@ -956,7 +972,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZLARM v2.2.4", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.5", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -973,7 +989,11 @@ private fun ThemeChoice(mode: ThemeMode, label: String, icon: ImageVector, curre
 
 @Composable
 private fun PermissionCard(icon: ImageVector, title: String, subtitle: String, ready: Boolean, onClick: () -> Unit) {
-    Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+    ) {
         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))

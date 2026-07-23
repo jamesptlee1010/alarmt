@@ -1,6 +1,10 @@
 package com.james.mathwakealarm
 
 import android.app.TimePickerDialog
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +26,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.QuestionMark
 import androidx.compose.material3.Button
@@ -51,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @Composable
 fun OnboardingScreen(appState: AppState) {
@@ -64,6 +70,18 @@ fun OnboardingScreen(appState: AppState) {
     var queuedAlarms by remember { mutableStateOf(emptyList<AlarmConfig>()) }
     var routineSteps by remember { mutableStateOf(emptyList<RoutineStep>()) }
     var addStepMenu by remember { mutableStateOf(false) }
+    var editingStep by remember { mutableStateOf<RoutineStep?>(null) }
+    var captureUri by remember { mutableStateOf<Uri?>(null) }
+
+    val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            captureUri?.toString()?.let { uri ->
+                editingStep = editingStep?.copy(
+                    referenceUris = (editingStep?.referenceUris.orEmpty() + uri).distinct().take(5)
+                )
+            }
+        }
+    }
 
     fun formatPickedTime(hour: Int, minute: Int): String {
         val amPm = if (hour < 12) "am" else "pm"
@@ -89,6 +107,44 @@ fun OnboardingScreen(appState: AppState) {
             selectedHour,
             selectedMinute,
             false
+        )
+    }
+
+    editingStep?.let { step ->
+        StepEditorDialog(
+            step = step,
+            onDismiss = { editingStep = null },
+            onScan = {
+                GmsBarcodeScanning.getClient(context).startScan()
+                    .addOnSuccessListener { barcode ->
+                        val captured = BarcodeIdentity.capture(barcode)
+                        editingStep = editingStep?.let { current ->
+                            val existing = (current.barcodeValues + current.barcodeValue)
+                                .filter { it.isNotBlank() }
+                            current.copy(
+                                barcodeValue = captured,
+                                barcodeValues = (existing + captured).distinct(),
+                                title = "Scan Barcode"
+                            )
+                        }
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(context, "Scanner could not start", Toast.LENGTH_SHORT).show()
+                    }
+            },
+            onCapture = {
+                captureUri = PhotoStore.createCaptureUri(context, "onboarding_routine")
+                captureUri?.let { photoLauncher.launch(it) }
+            },
+            onSave = { saved ->
+                val exists = routineSteps.any { it.id == saved.id }
+                routineSteps = if (exists) {
+                    routineSteps.map { if (it.id == saved.id) saved else it }
+                } else {
+                    routineSteps + saved
+                }
+                editingStep = null
+            }
         )
     }
 
@@ -136,7 +192,6 @@ fun OnboardingScreen(appState: AppState) {
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Your name") },
                             placeholder = { Text("Enter your name") },
-                            supportingText = { Text("Used in your morning, afternoon or evening greeting") },
                             singleLine = true
                         )
                     }
@@ -200,7 +255,11 @@ fun OnboardingScreen(appState: AppState) {
                         )
                         Spacer(Modifier.height(20.dp))
                         if (routineSteps.isEmpty()) {
-                            Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(Icons.Outlined.QuestionMark, null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.height(10.dp))
@@ -210,7 +269,11 @@ fun OnboardingScreen(appState: AppState) {
                             }
                         } else {
                             routineSteps.forEachIndexed { index, step ->
-                                Card(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+                                    shape = RoundedCornerShape(18.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     Row(
                                         Modifier.fillMaxWidth().padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -237,8 +300,11 @@ fun OnboardingScreen(appState: AppState) {
                                                 fontSize = 13.sp
                                             )
                                         }
+                                        IconButton(onClick = { editingStep = step }) {
+                                            Icon(Icons.Outlined.Edit, contentDescription = "Edit step")
+                                        }
                                         IconButton(onClick = { routineSteps = routineSteps.filterNot { it.id == step.id } }) {
-                                            Icon(Icons.Outlined.Delete, null)
+                                            Icon(Icons.Outlined.Delete, contentDescription = "Delete step")
                                         }
                                     }
                                 }
@@ -255,7 +321,7 @@ fun OnboardingScreen(appState: AppState) {
                                     text = { Text("Questions") },
                                     leadingIcon = { Icon(Icons.Outlined.QuestionMark, null) },
                                     onClick = {
-                                        routineSteps = routineSteps + RoutineStep(
+                                        editingStep = RoutineStep(
                                             type = StepType.QUESTIONS,
                                             title = "Answer Questions",
                                             questionsRequired = 2,
@@ -268,7 +334,7 @@ fun OnboardingScreen(appState: AppState) {
                                     text = { Text("Scan Barcode") },
                                     leadingIcon = { Icon(Icons.Outlined.QrCodeScanner, null) },
                                     onClick = {
-                                        routineSteps = routineSteps + RoutineStep(type = StepType.BARCODE, title = "Scan Barcode")
+                                        editingStep = RoutineStep(type = StepType.BARCODE, title = "Scan Barcode")
                                         addStepMenu = false
                                     }
                                 )
@@ -276,7 +342,7 @@ fun OnboardingScreen(appState: AppState) {
                                     text = { Text("Verify Photo") },
                                     leadingIcon = { Icon(Icons.Outlined.CameraAlt, null) },
                                     onClick = {
-                                        routineSteps = routineSteps + RoutineStep(type = StepType.PHOTO, title = "Verify Photo")
+                                        editingStep = RoutineStep(type = StepType.PHOTO, title = "Verify Photo")
                                         addStepMenu = false
                                     }
                                 )

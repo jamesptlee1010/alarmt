@@ -1,116 +1,43 @@
-# TAZALARM v2.1.3
+# TAZLARM v2.2.5
 
-TAZALARM is a personal Android sunrise alarm that keeps sounding until its configured wake-up routine has been completed.
-
-This package is arranged for a **GitHub Actions build**, so Android Studio is not required. The existing Android identity is retained:
+TAZLARM is a personal Android sunrise alarm that continues until its configured wake-up routine is completed.
 
 ```text
 applicationId: com.james.mathwakealarm
-version: 2.1.3 (213)
+version: 2.2.5 (225)
 minimum Android: 8.0 / API 26
 ```
 
-## What is included
+## v2.2.5 changes
 
-### v2.1.3 home-screen refinement
+- The animated sunrise now draws edge-to-edge behind the status, cutout and navigation-bar areas.
+- The previous solid lower-screen block has been removed so the sunrise continues to the bottom of the display.
+- The first-run name field no longer shows explanatory text underneath it.
+- Every routine step shown during onboarding has an Edit pencil.
+- Question steps can be edited immediately to choose the required count and topics.
+- Barcode and photo steps can also be configured from the onboarding pencil editor.
+- Routine and Settings cards now use a pale-blue surface.
 
-- The full sneezing-cat TAZALARM logo is centred at the top of Home.
-- The duplicate Settings icon has been removed from the top-right corner.
-- Settings remains available in the persistent bottom navigation bar.
-- No “Stay Awake” follow-up alarm or confirmation has been added.
+## Existing behaviour retained
 
+- Two-minute minimum sunrise with no countdown or progress bar.
+- TAZLARM header pinned near the top of the live alarm screen.
+- Compact question, barcode and photo challenge cards.
+- Multiple alarms, one-time or selected-day repeats, custom routines and multiple accepted barcodes.
+- Dance Moms and Teen Mom 2 trivia topics.
+- Easier maths generation.
+- Exact-alarm scheduling, backup delivery, foreground service, wake lock and reboot rescheduling.
+- Signed release build through GitHub Actions.
 
-### New TAZALARM design
+## Build the APK without Android Studio
 
-- Universal minimalist monoline sneezing-cat identity.
-- TAZALARM name throughout the app and launcher icon.
-- Premium light and dark main screens based on the selected mockup.
-- Home, Alarms, Routines, Progress and Settings navigation.
-- Next-alarm card, quick actions, upcoming alarms and morning completion summary.
+1. Keep the repository private because the project contains its signing keystore.
+2. Extract this ZIP.
+3. Replace the contents of the local cloned repository with the extracted files, preserving `.git`.
+4. Commit and push through GitHub Desktop.
+5. Open **Actions → Build TAZLARM APK**.
+6. Run the workflow.
+7. Download **TAZLARM-v2.2.5-installable-APK** from the completed run.
+8. Extract the downloaded artifact and install `TAZLARM-v2.2.5.apk`.
 
-### First-time setup
-
-- Name and personalised morning/afternoon/evening greeting.
-- Create one or several alarms during setup.
-- Alarm name, time and recurring weekdays.
-- Guided barcode registration.
-- Guided live-camera reference photos.
-- Final review before alarms are enabled.
-
-### Multiple alarms and routines
-
-- Independent alarm time, weekdays, enabled state, sunrise duration and vibration.
-- Ordered Questions, Barcode and Photo steps.
-- Add, edit, move, duplicate and delete routine steps.
-- Presets: Quick Start, Normal Workday, Must Get Up and Weekend.
-- Independent routine per alarm.
-
-### Live alarm
-
-- Full-screen display over the lock screen.
-- One-minute animated horizon: night navy → purple → red → orange → warm daylight.
-- App-window brightness rises with the sunrise.
-- Alarm begins at 5% volume and increases every 10 seconds.
-- Five seconds of audio relief after each correct answer.
-- Clear `Step X of Y` progress.
-- Generic barcode wording exactly as requested:
-  - **Scan Barcode**
-  - **Barcode must match your saved code**
-  - **Open Scanner**
-- Live-camera photo verification against saved reference photos.
-- Deliberate 50-correct-question penalty route with no return to the normal routine.
-- Back navigation cannot dismiss the active alarm.
-
-### Questions and progress
-
-- Generated arithmetic plus built-in questions across World War II, Carl Jung, twentieth-century history, geography, science, sport, general knowledge and logic.
-- Unlimited question skipping, but skipped questions give no progress.
-- Per-topic correct/attempted data.
-- Completion times, step results, penalty usage and recent mornings.
-- Persistent reliability event timeline.
-
-### Reliability retained from v2.0.1
-
-- Exact alarms delivered directly to a foreground service.
-- A separate backup trigger ten seconds later.
-- Partial wake lock, `START_STICKY` recovery and active-alarm restoration.
-- High-importance full-screen alarm notification.
-- Rescheduling after reboot, clock changes, timezone changes and app update.
-- Two-minute screen-off reliability test.
-- Battery optimisation, exact-alarm and notification setup links.
-
-## Build without Android Studio
-
-1. Keep the GitHub repository **Private** because this personal package contains its signing keystore.
-2. Extract the ZIP.
-3. Upload everything inside the extracted folder to the top level of the GitHub repository. Include the hidden `.github` folder.
-4. Commit to `main`.
-5. Open **Actions → Build TAZALARM APK**.
-6. Run the workflow or open the automatically started run.
-7. After the green tick, download **TAZALARM-v2.1.3-installable-APK** from Artifacts.
-8. Unzip the artifact and install `TAZALARM-v2.1.3.apk` on the phone.
-
-## Critical signing note
-
-The v2.0.1 private signing file was not available in this chat, so this package contains a newly generated TAZALARM personal key. The project keeps the old application ID, but Android requires both the application ID **and the exact same signing certificate** to update an installed app.
-
-- With the included key, this is a signed and installable **fresh installation**.
-- To install over MathWake Alarm v2.0.1 without uninstalling it, replace `personal-release.keystore` with the exact keystore from the v2.0.1 repository and update the four signing values in `app/build.gradle.kts` to match that key.
-
-See `SIGNING_COMPATIBILITY.md` before replacing an existing installation.
-
-## First real-device checks
-
-Before relying on it as the only alarm:
-
-1. Allow notifications.
-2. Allow exact alarms / Alarms & reminders.
-3. Allow full-screen alarm behaviour if Android exposes that setting.
-4. Exclude TAZALARM from aggressive battery optimisation.
-5. Use Settings → **Schedule Screen-Off Test**, lock the phone and confirm the alarm opens after two minutes.
-6. Test once after restarting the phone.
-7. Keep a backup alarm until it has succeeded on several mornings on the exact handset.
-
-## Build validation boundary
-
-The packaging environment can validate source structure, XML, signing material and reliability implementation, but does not contain a complete Android SDK. The supplied GitHub Actions workflow performs the authoritative unit tests, Android release compilation, APK signing and signature verification.
+The supplied validator checks project structure, Android XML, signing material and targeted feature implementation. GitHub Actions performs the authoritative Android unit tests, release compilation, APK signing and signature verification.
