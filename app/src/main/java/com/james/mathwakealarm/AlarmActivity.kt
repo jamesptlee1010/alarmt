@@ -38,7 +38,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -300,52 +299,53 @@ private fun AlarmChallengeScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 24.dp),
+                .padding(horizontal = 18.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BrandMark(
-                modifier = Modifier.size(width = 190.dp, height = 154.dp),
+                modifier = Modifier.width(220.dp).height(64.dp),
                 color = Color.White,
                 fullLogo = true
             )
+            Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.VolumeUp, null, tint = TazAmber, modifier = Modifier.size(19.dp))
+                Icon(Icons.Outlined.VolumeUp, null, tint = TazAmber, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Alarm active • volume rising", color = TazAmber, fontWeight = FontWeight.Bold)
+                Text("Alarm active • volume rising", color = TazAmber, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
-            Spacer(Modifier.height(20.dp))
-            Text(greetingFor(alarm.hour, AppRepository.state.value.userName), color = Color.White, fontSize = 31.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
+            Text(greetingFor(alarm.hour, AppRepository.state.value.userName), color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(3.dp))
             Text(
                 if (penaltyMode) "Penalty route • $correctCount of 50 correct" else "Step ${stepIndex + 1} of ${alarm.routine.size}",
                 color = Color.White,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(10.dp))
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = .96f)),
-                shape = RoundedCornerShape(28.dp),
-                modifier = Modifier.fillMaxWidth()
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = .95f)),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.fillMaxWidth(.90f)
             ) {
                 Column(
-                    Modifier.padding(20.dp),
+                    Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     when {
                         penaltyMode || currentStep?.type == StepType.QUESTIONS -> {
                             val q = question
-                            Text(if (penaltyMode) "50-Question Penalty" else currentStep?.title.orEmpty(), color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 23.sp)
+                            Text(if (penaltyMode) "50-Question Penalty" else currentStep?.title.orEmpty(), color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
                             Text("$correctCount / $questionTarget correct", color = TazBlue, fontWeight = FontWeight.Bold)
                             if (q != null) {
-                                Text(q.prompt, color = TazNavy, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                                Text(q.prompt, color = TazNavy, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                                 Text(q.topic.displayName, color = Color(0xFF60728B), fontSize = 13.sp)
                                 OutlinedTextField(
                                     value = answer,
                                     onValueChange = { answer = it },
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth().height(62.dp),
                                     label = { Text("Enter answer", color = Color.Black) },
                                     singleLine = true,
                                     textStyle = TextStyle(
@@ -368,14 +368,14 @@ private fun AlarmChallengeScreen(
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { submitAnswer() })
                                 )
-                                Button(onClick = { submitAnswer() }, modifier = Modifier.fillMaxWidth()) { Text("Submit") }
-                                OutlinedButton(onClick = { nextQuestion(); feedback = "Question skipped — you still need $questionTarget correct." }, modifier = Modifier.fillMaxWidth()) { Text("Skip Question") }
+                                Button(onClick = { submitAnswer() }, modifier = Modifier.fillMaxWidth().height(50.dp)) { Text("Submit") }
+                                OutlinedButton(onClick = { nextQuestion(); feedback = "Question skipped — you still need $questionTarget correct." }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Skip Question") }
                             }
                         }
                         currentStep?.type == StepType.BARCODE -> {
                             val step = requireNotNull(currentStep)
-                            Icon(Icons.Outlined.QrCodeScanner, null, tint = TazBlue, modifier = Modifier.size(58.dp))
-                            Text("Scan Barcode", color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 29.sp)
+                            Icon(Icons.Outlined.QrCodeScanner, null, tint = TazBlue, modifier = Modifier.size(46.dp))
+                            Text("Scan Barcode", color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp)
                             val acceptedCodes = (step.barcodeValues + listOf(step.barcodeValue)).filter { it.isNotBlank() }.distinct()
                             Text("Barcode must match one of your saved codes", color = Color(0xFF60728B))
                             Button(
@@ -420,8 +420,8 @@ private fun AlarmChallengeScreen(
                         }
                         currentStep?.type == StepType.PHOTO -> {
                             val step = requireNotNull(currentStep)
-                            Icon(Icons.Outlined.CameraAlt, null, tint = TazBlue, modifier = Modifier.size(58.dp))
-                            Text(step.title, color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+                            Icon(Icons.Outlined.CameraAlt, null, tint = TazBlue, modifier = Modifier.size(46.dp))
+                            Text(step.title, color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp)
                             Text("Use the live camera to match one of your saved references.", color = Color(0xFF60728B))
                             Text("${step.referenceUris.size} reference photos available", color = if (step.referenceUris.isNotEmpty()) TazGreen else TazRed)
                             Button(
@@ -447,16 +447,7 @@ private fun AlarmChallengeScreen(
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
-            LinearProgressIndicator(
-                progress = {
-                    if (penaltyMode) correctCount / 50f else (stepIndex + stepProgressFraction(currentStep, correctCount)).coerceAtMost(alarm.routine.size.toFloat()) / alarm.routine.size.coerceAtLeast(1)
-                },
-                modifier = Modifier.fillMaxWidth().height(7.dp),
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = .25f)
-            )
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(10.dp))
             if (!penaltyMode) {
                 TextButton(onClick = { showPenaltyConfirm = true }) {
                     Text("Having trouble? Use the 50-question penalty", color = Color.White)
@@ -515,7 +506,3 @@ private fun greetingFor(hour: Int, name: String): String = when (hour) {
     else -> "Good evening, $name"
 }
 
-private fun stepProgressFraction(step: RoutineStep?, correct: Int): Float = when (step?.type) {
-    StepType.QUESTIONS -> correct.toFloat() / step.questionsRequired.coerceAtLeast(1)
-    else -> 0f
-}

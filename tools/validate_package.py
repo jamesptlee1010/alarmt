@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.3 / 223", 'versionCode = 223' in build and 'versionName = "2.2.3"' in build)
+check("Version 2.2.4 / 224", 'versionCode = 224' in build and 'versionName = "2.2.4"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -71,6 +71,9 @@ check("Reboot/time/update rescheduling", all(x in manifest for x in ["BOOT_COMPL
 check("Two-minute sunrise minimum", "sunriseSeconds: Int = 120" in main_source and "coerceAtLeast(120)" in alarm_ui and "coerceIn(120, 600)" in app_ui)
 check("Existing alarms migrate to two-minute sunrise", "if (alarm.sunriseSeconds < 120) alarm.copy(sunriseSeconds = 120)" in main_source)
 check("No sunrise countdown on live alarm screen", 'Text(\n                "Sunrise' not in alarm_ui and ' / 60 seconds' not in alarm_ui and 'sunrise remaining' not in alarm_ui.lower())
+check("Live alarm header is pinned high", "Modifier.width(220.dp).height(64.dp)" in alarm_ui and ".padding(horizontal = 18.dp, vertical = 6.dp)" in alarm_ui)
+check("Live challenge card is compact", "modifier = Modifier.fillMaxWidth(.90f)" in alarm_ui and "Modifier.padding(horizontal = 16.dp, vertical = 14.dp)" in alarm_ui)
+check("No live alarm progress bar", "LinearProgressIndicator" not in alarm_ui and "stepProgressFraction" not in alarm_ui)
 check("Per-window brightness ramp", "screenBrightness" in alarm_ui)
 check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "red", "orange", "daylight", "SunriseHorizon"]))
 check("Selected sneezing-cat branding used universally", "R.drawable.tazalarm_cat_only" in main_source and 'Text(\n            "TAZLARM"' in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_cat_only.png").is_file())
