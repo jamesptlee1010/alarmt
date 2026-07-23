@@ -1,13 +1,13 @@
-# TAZLARM v2.2.7
+# TAZLARM v2.2.8
 
 Android sunrise alarm application.
 
 - Application ID: `com.james.mathwakealarm`
-- Version: 2.2.7 (227)
+- Version: 2.2.8 (228)
 - Minimum Android version: API 26
 - Target/compile SDK: 36
 
-## v2.2.7 highlights
+## v2.2.8 highlights
 
 - Light-mode Home dashboard selected from the approved mockup direction.
 - Routine cards reorder by long-press dragging or Up/Down buttons.
@@ -20,7 +20,7 @@ Android sunrise alarm application.
 Run `python tools/validate_package.py` before uploading. The included GitHub Actions workflow performs the authoritative Android unit-test and release build.
 
 
-## v2.2.7 highlights
+## v2.2.8 highlights
 
 - Initial full-screen **SILENCE** button before the first wake-up task begins.
 - Question stages now give a 12-second quiet period after each new question appears before sound/vibration resume.

@@ -755,7 +755,7 @@ private fun NumberPickerColumn(
                 minValue = range.first
                 maxValue = range.last
                 wrapSelectorWheel = true
-                descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+                descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
                 setFormatter { format(it) }
                 setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
             }
@@ -778,7 +778,7 @@ private fun NumberPickerLabels(value: Int, values: List<String>, onValueChange: 
                 minValue = 0
                 maxValue = values.lastIndex
                 wrapSelectorWheel = false
-                descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+                descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
                 displayedValues = values.toTypedArray()
                 setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
             }
@@ -1393,7 +1393,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZLARM v2.2.6", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.8", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }

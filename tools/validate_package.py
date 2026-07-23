@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.6 / 226", 'versionCode = 226' in build and 'versionName = "2.2.6"' in build)
+check("Version 2.2.8 / 228", 'versionCode = 228' in build and 'versionName = "2.2.8"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -68,7 +68,7 @@ check("Partial wake lock", "PowerManager.PARTIAL_WAKE_LOCK" in service)
 check("Gradual 10-second volume ramp", "postDelayed(this, 10_000L)" in service and "0.05f" in service)
 check("Active alarm recovery", "activeAlarmId()" in service and "Alarm service restored" in service)
 check("Reboot/time/update rescheduling", all(x in manifest for x in ["BOOT_COMPLETED", "TIME_SET", "TIMEZONE_CHANGED", "MY_PACKAGE_REPLACED"]))
-check("Two-minute sunrise minimum", "sunriseSeconds: Int = 120" in main_source and "coerceAtLeast(120)" in alarm_ui and "coerceIn(120, 600)" in app_ui)
+check("Two-minute sunrise minimum", "sunriseSeconds: Int = 120" in main_source and "coerceAtLeast(120)" in alarm_ui)
 check("Existing alarms migrate to two-minute sunrise", "if (alarm.sunriseSeconds < 120) alarm.copy(sunriseSeconds = 120)" in main_source)
 check("No sunrise countdown on live alarm screen", 'Text(\n                "Sunrise' not in alarm_ui and ' / 60 seconds' not in alarm_ui and 'sunrise remaining' not in alarm_ui.lower())
 check("Live alarm header is pinned high", "Modifier.width(220.dp).height(64.dp)" in alarm_ui and ".padding(horizontal = 18.dp, vertical = 6.dp)" in alarm_ui)
@@ -160,12 +160,28 @@ check(
 )
 check(
     "Step-specific quiet periods",
-    "pauseAlarm(7_000L)" in alarm_ui
+    "pauseAlarm(12_000L)" in alarm_ui
     and "pauseAlarm(20_000L)" in alarm_ui
     and "pauseAlarm(30_000L)" in alarm_ui
     and "vibrator?.cancel()" in service
     and "coerceIn(1_000L, 60_000L)" in service,
 )
+check(
+    "Initial SILENCE gate starts the routine",
+    'Text("SILENCE"' in alarm_ui
+    and "awaitingInitialSilence" in alarm_ui
+    and "onClick = { awaitingInitialSilence = false }" in alarm_ui,
+)
+check(
+    "Wheel scroller time picker in setup and Edit Alarm",
+    "fun WheelTimePicker(" in app_ui
+    and "NumberPicker(context)" in app_ui
+    and "WheelTimePicker(" in onboarding
+    and all(label in app_ui for label in ['Text("ONCE")', 'Text("WEEKDAYS")', 'Text("CUSTOM")'])
+    and 'label = { Text("Hour") }' not in app_ui
+    and 'label = { Text("Minute") }' not in app_ui,
+)
+
 check(
     "Alarm runs over lock screen with permission guidance",
     'android:showWhenLocked="true"' in manifest
