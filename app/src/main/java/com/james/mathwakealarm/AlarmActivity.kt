@@ -180,6 +180,7 @@ private fun AlarmChallengeScreen(
     val topicCorrect = remember { mutableStateMapOf<Topic, Int>() }
     val topicAttempted = remember { mutableStateMapOf<Topic, Int>() }
     var captureUri by remember { mutableStateOf<Uri?>(null) }
+    var awaitingInitialSilence by remember { mutableStateOf(true) }
 
     val currentStep = if (penaltyMode) null else alarm.routine.getOrNull(stepIndex)
     val questionTarget = if (penaltyMode) 50 else currentStep?.questionsRequired ?: 0
@@ -199,7 +200,7 @@ private fun AlarmChallengeScreen(
             if (recentQuestionIds.size > 30) recentQuestionIds.removeAt(0)
         }
         answer = ""
-        pauseAlarm(7_000L)
+        pauseAlarm(12_000L)
     }
 
     fun completeRoutine() {
@@ -294,11 +295,13 @@ private fun AlarmChallengeScreen(
         }
     }
 
-    LaunchedEffect(stepIndex, penaltyMode) {
-        when {
-            penaltyMode || currentStep?.type == StepType.QUESTIONS -> nextQuestion()
-            currentStep?.type == StepType.BARCODE -> pauseAlarm(20_000L)
-            currentStep?.type == StepType.PHOTO -> pauseAlarm(30_000L)
+    LaunchedEffect(stepIndex, penaltyMode, awaitingInitialSilence) {
+        if (!awaitingInitialSilence) {
+            when {
+                penaltyMode || currentStep?.type == StepType.QUESTIONS -> nextQuestion()
+                currentStep?.type == StepType.BARCODE -> pauseAlarm(20_000L)
+                currentStep?.type == StepType.PHOTO -> pauseAlarm(30_000L)
+            }
         }
         correctCount = 0
         attempts = 0
@@ -369,6 +372,15 @@ private fun AlarmChallengeScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     when {
+                        awaitingInitialSilence -> {
+                            Icon(Icons.Outlined.VolumeUp, null, tint = TazAmber, modifier = Modifier.size(54.dp))
+                            Text("Ready to start?", color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+                            Text("Tap SILENCE to stop the alarm briefly and begin your first wake-up step.", color = Color(0xFF60728B))
+                            Button(
+                                onClick = { awaitingInitialSilence = false },
+                                modifier = Modifier.fillMaxWidth().height(58.dp)
+                            ) { Text("SILENCE", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold) }
+                        }
                         penaltyMode || currentStep?.type == StepType.QUESTIONS -> {
                             val q = question
                             Text(if (penaltyMode) "50-Question Penalty" else currentStep?.title.orEmpty(), color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)

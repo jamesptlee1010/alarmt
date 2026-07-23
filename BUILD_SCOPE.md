@@ -1,4 +1,4 @@
-# TAZLARM v2.2.6 build scope
+# TAZLARM v2.2.7 build scope
 
 - Selected light-mode Home layout.
 - Home readiness, next alarm, today’s routine and last-result panels.
@@ -11,4 +11,10 @@
 - Photo verification stages receive 30 seconds of silence.
 - Full-screen immersive lock-screen alarm experience.
 - Android 14+ full-screen alarm permission guidance.
-- Version 2.2.6 / versionCode 226.
+- Version 2.2.7 / versionCode 227.
+
+- Add initial SILENCE gate to the live alarm experience.
+- Increase question quiet window from 7 seconds to 12 seconds.
+- Keep barcode and photo quiet windows at 20 and 30 seconds.
+- Replace manual time entry in alarm creation and Edit Alarm with wheel-style scroller pickers.
+- Simplify Edit Alarm to focus on time + repeat selection.

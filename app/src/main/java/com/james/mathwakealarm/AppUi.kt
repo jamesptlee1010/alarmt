@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import android.widget.NumberPicker
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -116,6 +117,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -642,12 +644,9 @@ private fun AlarmsScreen(appState: AppState, padding: PaddingValues, onEdit: (St
 
 @Composable
 private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave: (AlarmConfig) -> Unit) {
-    var label by remember(alarm.id) { mutableStateOf(alarm.label) }
-    var hour by remember(alarm.id) { mutableStateOf(alarm.hour.toString()) }
-    var minute by remember(alarm.id) { mutableStateOf(alarm.minute.toString()) }
+    var hour24 by remember(alarm.id) { mutableIntStateOf(alarm.hour) }
+    var minute by remember(alarm.id) { mutableIntStateOf(alarm.minute) }
     var days by remember(alarm.id) { mutableStateOf(alarm.days) }
-    var sunrise by remember(alarm.id) { mutableStateOf(alarm.sunriseSeconds.toString()) }
-    var vibrate by remember(alarm.id) { mutableStateOf(alarm.vibrate) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth()) {
@@ -656,35 +655,28 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text("Edit Alarm", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                OutlinedTextField(label = { Text("Alarm name") }, value = label, onValueChange = { label = it }, modifier = Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = hour,
-                        onValueChange = { hour = it.filter(Char::isDigit).take(2) },
-                        label = { Text("Hour") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = minute,
-                        onValueChange = { minute = it.filter(Char::isDigit).take(2) },
-                        label = { Text("Minute") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Text("Repeat on", fontWeight = FontWeight.Bold)
-                AlarmDaySelector(days) { day -> days = if (day in days) days - day else (days + day).sorted() }
-                OutlinedTextField(
-                    value = sunrise,
-                    onValueChange = { sunrise = it.filter(Char::isDigit).take(3) },
-                    label = { Text("Sunrise duration in seconds (minimum 120)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                Text(
+                    "Alarm in ${timeUntilAlarmText(hour24, minute, days)}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                WheelTimePicker(
+                    hour24 = hour24,
+                    minute = minute,
+                    onTimeChange = { h, m ->
+                        hour24 = h
+                        minute = m
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = vibrate, onCheckedChange = { vibrate = it })
-                    Text("Vibrate while the alarm is active")
+                Text("Repeat", fontWeight = FontWeight.Bold)
+                RepeatPresetRow(
+                    selectedDays = days,
+                    onSelectOnce = { days = emptyList() },
+                    onSelectWeekdays = { days = listOf(1, 2, 3, 4, 5) },
+                    onSelectCustom = { if (days.isEmpty() || days == listOf(1, 2, 3, 4, 5)) days = listOf(1) }
+                )
+                if (days.isNotEmpty() && days != listOf(1, 2, 3, 4, 5)) {
+                    AlarmDaySelector(days) { day -> days = if (day in days) (days - day).sorted() else (days + day).sorted() }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
@@ -692,12 +684,9 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
                         onClick = {
                             onSave(
                                 alarm.copy(
-                                    label = label.ifBlank { "Alarm" },
-                                    hour = hour.toIntOrNull()?.coerceIn(0, 23) ?: alarm.hour,
-                                    minute = minute.toIntOrNull()?.coerceIn(0, 59) ?: alarm.minute,
-                                    days = days.ifEmpty { alarm.days },
-                                    sunriseSeconds = sunrise.toIntOrNull()?.coerceIn(120, 600) ?: 120,
-                                    vibrate = vibrate
+                                    hour = hour24,
+                                    minute = minute,
+                                    days = days
                                 )
                             )
                         },
@@ -706,6 +695,157 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
                 }
             }
         }
+    }
+}
+
+@Composable
+fun WheelTimePicker(
+    hour24: Int,
+    minute: Int,
+    onTimeChange: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val displayHour = ((hour24 + 11) % 12) + 1
+    val amPmIndex = if (hour24 < 12) 0 else 1
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NumberPickerColumn(value = displayHour, range = 1..12, onValueChange = { newHour12 ->
+                val newHour24 = when {
+                    amPmIndex == 0 && newHour12 == 12 -> 0
+                    amPmIndex == 0 -> newHour12
+                    amPmIndex == 1 && newHour12 == 12 -> 12
+                    else -> newHour12 + 12
+                }
+                onTimeChange(newHour24, minute)
+            })
+            Text(":", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            NumberPickerColumn(value = minute, range = 0..59, format = { it.toString().padStart(2, '0') }, onValueChange = { onTimeChange(hour24, it) })
+            NumberPickerLabels(value = amPmIndex, values = listOf("AM", "PM"), onValueChange = { newIndex ->
+                val currentHour12 = displayHour
+                val newHour24 = when {
+                    newIndex == 0 && currentHour12 == 12 -> 0
+                    newIndex == 0 -> currentHour12
+                    newIndex == 1 && currentHour12 == 12 -> 12
+                    else -> currentHour12 + 12
+                }
+                onTimeChange(newHour24, minute)
+            })
+        }
+    }
+}
+
+@Composable
+private fun NumberPickerColumn(
+    value: Int,
+    range: IntRange,
+    format: (Int) -> String = { it.toString() },
+    onValueChange: (Int) -> Unit
+) {
+    AndroidView(
+        factory = { context ->
+            NumberPicker(context).apply {
+                minValue = range.first
+                maxValue = range.last
+                wrapSelectorWheel = true
+                descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+                setFormatter { format(it) }
+                setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
+            }
+        },
+        update = {
+            it.minValue = range.first
+            it.maxValue = range.last
+            it.setFormatter { v -> format(v) }
+            if (it.value != value) it.value = value
+        },
+        modifier = Modifier.width(84.dp).height(170.dp)
+    )
+}
+
+@Composable
+private fun NumberPickerLabels(value: Int, values: List<String>, onValueChange: (Int) -> Unit) {
+    AndroidView(
+        factory = { context ->
+            NumberPicker(context).apply {
+                minValue = 0
+                maxValue = values.lastIndex
+                wrapSelectorWheel = false
+                descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+                displayedValues = values.toTypedArray()
+                setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
+            }
+        },
+        update = {
+            it.displayedValues = null
+            it.minValue = 0
+            it.maxValue = values.lastIndex
+            it.displayedValues = values.toTypedArray()
+            if (it.value != value) it.value = value
+        },
+        modifier = Modifier.width(92.dp).height(170.dp)
+    )
+}
+
+@Composable
+private fun RepeatPresetRow(
+    selectedDays: List<Int>,
+    onSelectOnce: () -> Unit,
+    onSelectWeekdays: () -> Unit,
+    onSelectCustom: () -> Unit
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = selectedDays.isEmpty(),
+            onClick = onSelectOnce,
+            label = { Text("ONCE") },
+            modifier = Modifier.weight(1f)
+        )
+        FilterChip(
+            selected = selectedDays == listOf(1, 2, 3, 4, 5),
+            onClick = onSelectWeekdays,
+            label = { Text("WEEKDAYS") },
+            modifier = Modifier.weight(1f)
+        )
+        FilterChip(
+            selected = selectedDays.isNotEmpty() && selectedDays != listOf(1, 2, 3, 4, 5),
+            onClick = onSelectCustom,
+            label = { Text("CUSTOM") },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+private fun timeUntilAlarmText(hour: Int, minute: Int, days: List<Int>): String {
+    val now = java.time.ZonedDateTime.now()
+    var candidate = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
+    if (days.isEmpty()) {
+        if (!candidate.isAfter(now)) candidate = candidate.plusDays(1)
+    } else {
+        val targetDays = days.map { if (it == 7) java.time.DayOfWeek.SUNDAY.value else it }.toSet()
+        repeat(8) {
+            if (candidate.isAfter(now) && candidate.dayOfWeek.value in targetDays) return@repeat
+            candidate = candidate.plusDays(1).withHour(hour).withMinute(minute)
+        }
+        while (!(candidate.isAfter(now) && candidate.dayOfWeek.value in targetDays)) {
+            candidate = candidate.plusDays(1).withHour(hour).withMinute(minute)
+        }
+    }
+    val duration = java.time.Duration.between(now, candidate)
+    val totalMinutes = duration.toMinutes().coerceAtLeast(0)
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return when {
+        hours > 0 && minutes > 0 -> "$hours hours and $minutes minutes"
+        hours > 0 -> "$hours hours"
+        else -> "$minutes minutes"
     }
 }
 

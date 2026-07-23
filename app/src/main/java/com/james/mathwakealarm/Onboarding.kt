@@ -1,6 +1,5 @@
 package com.james.mathwakealarm
 
-import android.app.TimePickerDialog
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -96,19 +95,6 @@ fun OnboardingScreen(appState: AppState) {
         days = days,
         routine = routineSteps
     )
-
-    val timePicker = remember(selectedHour, selectedMinute) {
-        TimePickerDialog(
-            context,
-            { _, hourOfDay, minute ->
-                selectedHour = hourOfDay
-                selectedMinute = minute
-            },
-            selectedHour,
-            selectedMinute,
-            false
-        )
-    }
 
     editingStep?.let { step ->
         StepEditorDialog(
@@ -215,10 +201,22 @@ fun OnboardingScreen(appState: AppState) {
                             singleLine = true
                         )
                         Spacer(Modifier.height(16.dp))
-                        OutlinedButton(onClick = { timePicker.updateTime(selectedHour, selectedMinute); timePicker.show() }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Outlined.Alarm, null)
-                            Text(" Pick time: ${formatPickedTime(selectedHour, selectedMinute)}")
-                        }
+                        Text("Pick time", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        WheelTimePicker(
+                            hour24 = selectedHour,
+                            minute = selectedMinute,
+                            onTimeChange = { hour, minute ->
+                                selectedHour = hour
+                                selectedMinute = minute
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            formatPickedTime(selectedHour, selectedMinute),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                         Spacer(Modifier.height(20.dp))
                         Text("Repeat on", modifier = Modifier.fillMaxWidth(), fontWeight = FontWeight.Bold)
                         DayChipRows(days) { day ->
