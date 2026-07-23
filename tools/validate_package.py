@@ -79,6 +79,13 @@ check("50-question irreversible penalty", "questionTarget = if (penaltyMode) 50"
 check("Question topic coverage", all(topic in main_source for topic in ["WORLD_WAR_II", "CARL_JUNG", "TWENTIETH_CENTURY", "GEOGRAPHY", "SCIENCE", "SPORT", "LOGIC"]))
 check("Progress and reliability logging", "reliabilityEvents" in main_source and "ProgressScreen" in app_ui)
 check("Two-minute screen-off test", "120_000L" in app_ui and "scheduleTest" in scheduler)
+check(
+    "Compose keyboard imports are compile-safe",
+    "androidx.compose.ui.text.input.KeyboardOptions" not in main_source
+    and "androidx.compose.ui.text.input.KeyboardActions" not in main_source
+    and "androidx.compose.foundation.text.KeyboardOptions" in main_source
+    and "androidx.compose.foundation.text.KeyboardActions" in alarm_ui,
+)
 
 # Basic Kotlin delimiter balance and no parser-level errors from the local compiler.
 kotlin_files = list((ROOT / "app/src").rglob("*.kt"))
