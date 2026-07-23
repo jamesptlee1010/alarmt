@@ -142,12 +142,12 @@ jobs:
         run: |
           PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
           cp "$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" \
-            "$GITHUB_WORKSPACE/TAZALARM-v2.1.2.apk"
+            "$GITHUB_WORKSPACE/TAZALARM-v2.1.3.apk"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: TAZALARM-v2.1.2-installable-APK
-          path: TAZALARM-v2.1.2.apk
+          name: TAZALARM-v2.1.3-installable-APK
+          path: TAZALARM-v2.1.3.apk
           if-no-files-found: error
           retention-days: 30

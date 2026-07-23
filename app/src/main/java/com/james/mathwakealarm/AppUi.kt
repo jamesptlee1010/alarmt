@@ -171,8 +171,7 @@ fun TazAlarmApp(appState: AppState) {
                     val alarm = AppRepository.addAlarm()
                     editingAlarmId = alarm.id
                 },
-                onEditRoutine = { tab = AppTab.ROUTINES },
-                onSettings = { tab = AppTab.SETTINGS }
+                onEditRoutine = { tab = AppTab.ROUTINES }
             )
             AppTab.ALARMS -> AlarmsScreen(appState, padding, onEdit = { editingAlarmId = it })
             AppTab.ROUTINES -> RoutinesScreen(appState, padding)
@@ -201,8 +200,7 @@ private fun HomeScreen(
     padding: PaddingValues,
     onEditAlarm: (String) -> Unit,
     onAddAlarm: () -> Unit,
-    onEditRoutine: () -> Unit,
-    onSettings: () -> Unit
+    onEditRoutine: () -> Unit
 ) {
     val context = LocalContext.current
     val now = ZonedDateTime.now()
@@ -217,9 +215,11 @@ private fun HomeScreen(
     }
 
     ScreenContainer(padding) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            BrandHeader(Modifier.weight(1f), compact = true)
-            IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings") }
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            BrandHeader(compact = true)
         }
         Column {
             Text("$greeting, ${appState.userName}", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)

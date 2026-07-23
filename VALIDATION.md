@@ -1,4 +1,4 @@
-# TAZALARM v2.1.2 validation
+# TAZALARM v2.1.3 validation
 
 The source package passes **52/52 targeted structural checks** using `tools/validate_package.py`.
 
@@ -18,3 +18,11 @@ Validated areas include:
 - Release keystore readability and alias.
 
 The GitHub Actions run remains the authoritative full Android SDK compilation, unit-test, APK-signing and signature-verification check.
+
+
+## v2.1.3-specific checks
+
+- The Home header uses a full-width centred container for the selected logo.
+- There is no top-right Settings shortcut on Home.
+- Settings remains in the five-item bottom navigation.
+- No Stay Awake follow-up feature exists in production source.

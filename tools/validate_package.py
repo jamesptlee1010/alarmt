@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.1.2 / 212", 'versionCode = 212' in build and 'versionName = "2.1.2"' in build)
+check("Version 2.1.3 / 213", 'versionCode = 213' in build and 'versionName = "2.1.3"' in build)
 check("TAZALARM app label", '<string name="app_name">TAZALARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
 check("Full-screen alarm permission", "android.permission.USE_FULL_SCREEN_INTENT" in manifest)
@@ -73,6 +73,9 @@ check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "re
 check("Exact supplied logo used universally", "R.drawable.tazalarm_logo_full" in main_source and "R.drawable.tazalarm_cat_only" in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_logo_full.png").is_file())
 check("Multiple alarms in onboarding", "queuedAlarms" in onboarding and "completeOnboarding(name, alarms)" in onboarding)
 check("Five main navigation areas", all(x in app_ui for x in ["HOME", "ALARMS", "ROUTINES", "PROGRESS", "SETTINGS"]))
+check("Home logo is centred", "contentAlignment = Alignment.Center" in app_ui and "BrandHeader(compact = true)" in app_ui)
+check("No duplicate Home settings shortcut", "onSettings" not in app_ui and 'Icon(Icons.Outlined.Settings, "Settings")' not in app_ui)
+check("Stay Awake feature excluded", re.search(r"stay\s*awake|still\s*awake", main_source, re.I) is None)
 check("Generic barcode title", 'Text("Scan Barcode"' in alarm_ui and 'title = "Scan Barcode"' in main_source)
 check("Generic barcode helper", "Barcode must match your saved code" in alarm_ui)
 check("Generic scanner action", "Open Scanner" in alarm_ui)
