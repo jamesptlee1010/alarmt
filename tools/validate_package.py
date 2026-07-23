@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.5 / 225", 'versionCode = 225' in build and 'versionName = "2.2.5"' in build)
+check("Version 2.2.6 / 226", 'versionCode = 226' in build and 'versionName = "2.2.6"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -140,6 +140,41 @@ check(
     "defaultRoutineStartsBlankForUserConfiguration" in default_routine_test
     and "assertTrue(defaultRoutine().isEmpty())" in default_routine_test
     and "mustGetUpPresetStillProvidesTheFourStageExample" in default_routine_test,
+)
+
+
+check(
+    "Routine cards support long-press drag and buttons",
+    "detectDragGesturesAfterLongPress" in app_ui
+    and "Hold and drag to reorder" in app_ui
+    and "Icons.Outlined.ArrowUpward" in app_ui
+    and "Icons.Outlined.ArrowDownward" in app_ui
+    and "HomeRoutineStepCard" in app_ui,
+)
+check(
+    "Post-alarm Home fades from black to light",
+    "AppRepository.setTheme(ThemeMode.LIGHT)" in alarm_ui
+    and "EXTRA_POST_ALARM_FADE" in main_source
+    and "durationMillis = 2_000" in main_source
+    and ".background(Color.Black)" in main_source,
+)
+check(
+    "Step-specific quiet periods",
+    "pauseAlarm(7_000L)" in alarm_ui
+    and "pauseAlarm(20_000L)" in alarm_ui
+    and "pauseAlarm(30_000L)" in alarm_ui
+    and "vibrator?.cancel()" in service
+    and "coerceIn(1_000L, 60_000L)" in service,
+)
+check(
+    "Alarm runs over lock screen with permission guidance",
+    'android:showWhenLocked="true"' in manifest
+    and 'android:turnScreenOn="true"' in manifest
+    and "setShowWhenLocked(true)" in alarm_ui
+    and "setFullScreenIntent" in service
+    and "canUseFullScreenIntent" in app_ui
+    and "ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT" in app_ui
+    and "WindowInsetsCompat.Type.systemBars()" in alarm_ui,
 )
 
 # Basic Kotlin delimiter balance and no parser-level errors from the local compiler.

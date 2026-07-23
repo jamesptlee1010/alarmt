@@ -36,6 +36,8 @@ class AlarmService : Service() {
     private var vibrator: Vibrator? = null
     private var activeAlarmId: String? = null
     private var volumeStep = 0
+    private var shouldVibrateActive = false
+    private var pauseResumeRunnable: Runnable? = null
 
     private val volumeRamp = object : Runnable {
         override fun run() {
@@ -174,35 +176,49 @@ class AlarmService : Service() {
         volumeStep = 0
         handler.postDelayed(volumeRamp, 10_000L)
 
-        if (shouldVibrate) {
-            vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                getSystemService(VibratorManager::class.java).defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(VIBRATOR_SERVICE) as Vibrator
-            }
-            val pattern = longArrayOf(0, 700, 300, 700, 300)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(pattern, 0)
-            }
-        }
+        shouldVibrateActive = shouldVibrate
+        if (shouldVibrateActive) startVibration()
         val audioManager = getSystemService(AudioManager::class.java)
         audioManager?.mode = AudioManager.MODE_NORMAL
     }
 
+    private fun startVibration() {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            getSystemService(VibratorManager::class.java).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
+        val pattern = longArrayOf(0, 700, 300, 700, 300)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(pattern, 0)
+        }
+    }
+
     private fun pauseAudio(durationMs: Long) {
-        val player = mediaPlayer ?: return
-        val previous = min(1f, 0.05f + volumeStep * 0.105f)
-        player.setVolume(0f, 0f)
-        handler.postDelayed({ mediaPlayer?.setVolume(previous, previous) }, durationMs.coerceIn(1_000L, 15_000L))
+        val pauseFor = durationMs.coerceIn(1_000L, 60_000L)
+        pauseResumeRunnable?.let { handler.removeCallbacks(it) }
+        handler.removeCallbacks(volumeRamp)
+        mediaPlayer?.setVolume(0f, 0f)
+        vibrator?.cancel()
+
+        pauseResumeRunnable = Runnable {
+            val currentVolume = min(1f, 0.05f + volumeStep * 0.105f)
+            mediaPlayer?.setVolume(currentVolume, currentVolume)
+            if (shouldVibrateActive) startVibration()
+            if (currentVolume < 1f) handler.postDelayed(volumeRamp, 10_000L)
+            pauseResumeRunnable = null
+        }.also { handler.postDelayed(it, pauseFor) }
     }
 
     private fun stopAlarm() {
         activeAlarmId?.let { AppRepository.logReliability(it, "Alarm stopped after routine completion") }
         handler.removeCallbacksAndMessages(null)
+        pauseResumeRunnable = null
+        shouldVibrateActive = false
         mediaPlayer?.runCatching { stop() }
         mediaPlayer?.release()
         mediaPlayer = null
@@ -217,6 +233,8 @@ class AlarmService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        pauseResumeRunnable = null
+        shouldVibrateActive = false
         mediaPlayer?.release()
         vibrator?.cancel()
         wakeLock?.let { if (it.isHeld) it.release() }

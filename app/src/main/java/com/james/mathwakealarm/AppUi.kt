@@ -2,6 +2,7 @@ package com.james.mathwakealarm
 
 import android.Manifest
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -12,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +47,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LightMode
@@ -88,23 +91,31 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -252,28 +263,60 @@ private fun HomeScreen(
             }
         }
 
-        SectionTitle("QUICK ACTIONS")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            QuickAction(Icons.Outlined.Alarm, "Add Alarm", onAddAlarm, Modifier.weight(1f))
-            QuickAction(Icons.Outlined.List, "Edit Routine", onEditRoutine, Modifier.weight(1f))
-            QuickAction(Icons.Outlined.PlayArrow, "Test Wake-Up", {
-                next?.let {
-                    AlarmScheduler.scheduleTest(context, it.id, 5_000L)
-                    Toast.makeText(context, "Test alarm scheduled", Toast.LENGTH_SHORT).show()
-                }
-            }, Modifier.weight(1f))
-        }
+        ReadinessCard()
 
-        SectionTitle("UPCOMING ALARMS")
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-            if (appState.alarms.isEmpty()) {
-                Text("No alarms created", Modifier.padding(18.dp))
-            } else {
-                appState.alarms.take(4).forEachIndexed { index, alarm ->
-                    AlarmCompactRow(alarm, onEditAlarm)
-                    if (index != appState.alarms.take(4).lastIndex) Divider()
+        if (next != null) {
+            SectionTitle("TODAY'S ROUTINE")
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .58f)),
+                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (next.routine.isEmpty()) {
+                        Text("No routine steps added", Modifier.padding(8.dp))
+                    } else {
+                        next.routine.forEachIndexed { index, step ->
+                            key(step.id) {
+                                HomeRoutineStepCard(
+                                    number = index + 1,
+                                    step = step,
+                                    canUp = index > 0,
+                                    canDown = index < next.routine.lastIndex,
+                                    onOpen = onEditRoutine,
+                                    onUp = {
+                                        if (index > 0) {
+                                            val list = next.routine.toMutableList()
+                                            val previous = list[index - 1]
+                                            list[index - 1] = list[index]
+                                            list[index] = previous
+                                            val updated = next.copy(routine = list)
+                                            AppRepository.upsertAlarm(updated)
+                                            if (updated.enabled) AlarmScheduler.schedule(context, updated)
+                                        }
+                                    },
+                                    onDown = {
+                                        if (index < next.routine.lastIndex) {
+                                            val list = next.routine.toMutableList()
+                                            val following = list[index + 1]
+                                            list[index + 1] = list[index]
+                                            list[index] = following
+                                            val updated = next.copy(routine = list)
+                                            AppRepository.upsertAlarm(updated)
+                                            if (updated.enabled) AlarmScheduler.schedule(context, updated)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
+        }
+
+        if (lastRun != null) {
+            SectionTitle("LAST RESULT")
+            LastResultCard(lastRun)
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -370,6 +413,160 @@ private fun NextAlarmCard(alarm: AlarmConfig, nextAt: ZonedDateTime, onEdit: () 
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadinessCard() {
+    val context = LocalContext.current
+    val alarmManager = context.getSystemService(AlarmManager::class.java)
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+    val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+    val notificationsAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    val fullScreenAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+        notificationManager.canUseFullScreenIntent()
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Ready for tomorrow", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ReadinessBadge("Exact alarms", exactAllowed, Modifier.weight(1f))
+                ReadinessBadge("Notifications", notificationsAllowed, Modifier.weight(1f))
+                ReadinessBadge("Lock screen", fullScreenAllowed, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadinessBadge(label: String, ready: Boolean, modifier: Modifier = Modifier) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (ready) Color(0xFFEAF8F0) else Color(0xFFFFF4DF)
+        ),
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+    ) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (ready) Icons.Outlined.CheckCircle else Icons.Outlined.NotificationsActive,
+                contentDescription = null,
+                tint = if (ready) TazGreen else TazAmber,
+                modifier = Modifier.size(17.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(label, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun HomeRoutineStepCard(
+    number: Int,
+    step: RoutineStep,
+    canUp: Boolean,
+    canDown: Boolean,
+    onOpen: () -> Unit,
+    onUp: () -> Unit,
+    onDown: () -> Unit
+) {
+    var dragOffsetY by remember(step.id) { mutableFloatStateOf(0f) }
+    var dragging by remember(step.id) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    val reorderThresholdPx = with(LocalDensity.current) { 48.dp.toPx() }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .96f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (dragging) 10.dp else 1.dp),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                translationY = dragOffsetY
+                scaleX = if (dragging) 1.015f else 1f
+                scaleY = if (dragging) 1.015f else 1f
+            }
+            .pointerInput(step.id, canUp, canDown) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        dragging = true
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    },
+                    onDragCancel = {
+                        dragging = false
+                        dragOffsetY = 0f
+                    },
+                    onDragEnd = {
+                        dragging = false
+                        dragOffsetY = 0f
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffsetY += dragAmount.y
+                        when {
+                            dragOffsetY <= -reorderThresholdPx && canUp -> {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUp()
+                                dragOffsetY = 0f
+                            }
+                            dragOffsetY >= reorderThresholdPx && canDown -> {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onDown()
+                                dragOffsetY = 0f
+                            }
+                        }
+                    }
+                )
+            }
+            .clickable(onClick = onOpen)
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Outlined.DragHandle, "Hold and drag to reorder", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(6.dp))
+            Box(
+                Modifier.size(30.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Text(number.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+            Spacer(Modifier.width(10.dp))
+            Icon(stepIcon(step.type), null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(if (step.type == StepType.BARCODE) "Scan Barcode" else step.title, fontWeight = FontWeight.Bold)
+                Text(stepStatus(step), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            IconButton(enabled = canUp, onClick = onUp) { Icon(Icons.Outlined.ArrowUpward, "Move up") }
+            IconButton(enabled = canDown, onClick = onDown) { Icon(Icons.Outlined.ArrowDownward, "Move down") }
+        }
+    }
+}
+
+@Composable
+private fun LastResultCard(run: AlarmRun) {
+    val attempted = run.stepResults.sumOf { result -> result.topicScores.sumOf { it.attempted } }
+    val correct = run.stepResults.sumOf { result -> result.topicScores.sumOf { it.correct } }
+    val accuracy = if (attempted <= 0) 100 else (correct * 100 / attempted).coerceIn(0, 100)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .55f)),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Completed in ${formatDuration(run.durationSeconds)}", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Accuracy $accuracy%", fontWeight = FontWeight.SemiBold)
+                Text("${run.stepResults.size} steps", fontWeight = FontWeight.SemiBold)
+                Text(if (run.penaltyRouteUsed) "Penalty used" else "No penalty", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -598,33 +795,39 @@ private fun RoutinesScreen(appState: AppState, padding: PaddingValues) {
         selected?.let { alarm ->
             SectionTitle("${alarm.label.uppercase()} • ${alarm.routine.size} STEPS")
             alarm.routine.forEachIndexed { index, step ->
-                RoutineStepCard(
-                    number = index + 1,
-                    step = step,
-                    canUp = index > 0,
-                    canDown = index < alarm.routine.lastIndex,
-                    onEdit = { editingStep = step },
-                    onDuplicate = {
-                        val list = alarm.routine.toMutableList()
-                        list.add(index + 1, step.copy(id = UUID.randomUUID().toString()))
-                        persistRoutine(list)
-                    },
-                    onDelete = { persistRoutine(alarm.routine.filterNot { it.id == step.id }) },
-                    onUp = {
-                        val list = alarm.routine.toMutableList()
-                        val previous = list[index - 1]
-                        list[index - 1] = list[index]
-                        list[index] = previous
-                        persistRoutine(list)
-                    },
-                    onDown = {
-                        val list = alarm.routine.toMutableList()
-                        val following = list[index + 1]
-                        list[index + 1] = list[index]
-                        list[index] = following
-                        persistRoutine(list)
-                    }
-                )
+                key(step.id) {
+                    RoutineStepCard(
+                        number = index + 1,
+                        step = step,
+                        canUp = index > 0,
+                        canDown = index < alarm.routine.lastIndex,
+                        onEdit = { editingStep = step },
+                        onDuplicate = {
+                            val list = alarm.routine.toMutableList()
+                            list.add(index + 1, step.copy(id = UUID.randomUUID().toString()))
+                            persistRoutine(list)
+                        },
+                        onDelete = { persistRoutine(alarm.routine.filterNot { it.id == step.id }) },
+                        onUp = {
+                            if (index > 0) {
+                                val list = alarm.routine.toMutableList()
+                                val previous = list[index - 1]
+                                list[index - 1] = list[index]
+                                list[index] = previous
+                                persistRoutine(list)
+                            }
+                        },
+                        onDown = {
+                            if (index < alarm.routine.lastIndex) {
+                                val list = alarm.routine.toMutableList()
+                                val following = list[index + 1]
+                                list[index + 1] = list[index]
+                                list[index] = following
+                                persistRoutine(list)
+                            }
+                        }
+                    )
+                }
             }
             OutlinedButton(
                 onClick = { editingStep = RoutineStep(type = StepType.QUESTIONS, title = "Answer Questions", questionsRequired = 2) },
@@ -653,13 +856,65 @@ private fun RoutineStepCard(
     onUp: () -> Unit,
     onDown: () -> Unit
 ) {
+    var dragOffsetY by remember(step.id) { mutableFloatStateOf(0f) }
+    var dragging by remember(step.id) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    val reorderThresholdPx = with(LocalDensity.current) { 54.dp.toPx() }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .72f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (dragging) 12.dp else 2.dp),
         shape = RoundedCornerShape(22.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)
+        modifier = Modifier
+            .fillMaxWidth()
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                translationY = dragOffsetY
+                scaleX = if (dragging) 1.02f else 1f
+                scaleY = if (dragging) 1.02f else 1f
+            }
+            .pointerInput(step.id, canUp, canDown) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        dragging = true
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    },
+                    onDragCancel = {
+                        dragging = false
+                        dragOffsetY = 0f
+                    },
+                    onDragEnd = {
+                        dragging = false
+                        dragOffsetY = 0f
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffsetY += dragAmount.y
+                        when {
+                            dragOffsetY <= -reorderThresholdPx && canUp -> {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUp()
+                                dragOffsetY = 0f
+                            }
+                            dragOffsetY >= reorderThresholdPx && canDown -> {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onDown()
+                                dragOffsetY = 0f
+                            }
+                        }
+                    }
+                )
+            }
+            .clickable(onClick = onEdit)
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Outlined.DragHandle,
+                    contentDescription = "Hold and drag to reorder",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier.size(38.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
@@ -883,6 +1138,9 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
     val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
     val notificationAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+    val fullScreenAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+        notificationManager.canUseFullScreenIntent()
 
     ScreenContainer(padding) {
         PageHeader("Settings", "Personalisation, appearance and Android reliability checks.")
@@ -918,6 +1176,29 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
             notificationAllowed
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        PermissionCard(
+            Icons.Outlined.NotificationsActive,
+            "Full-screen lock-screen alarms",
+            if (fullScreenAllowed) "Allowed — alarm can open over the lock screen" else "Permission required",
+            fullScreenAllowed
+        ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                runCatching {
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                            Uri.parse("package:${context.packageName}")
+                        )
+                    )
+                }.onFailure {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                    )
+                }
+            }
         }
         PermissionCard(
             Icons.Outlined.Schedule,
@@ -972,7 +1253,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZLARM v2.2.5", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.6", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }

@@ -1,9 +1,9 @@
-# TAZLARM v2.2.5 validation
+# TAZLARM v2.2.6 validation
 
-Structural and targeted package validation passed **67/67 checks**.
+Structural validation result: **71/71 checks passed**.
 
 ```text
-TAZLARM package validation: 67/67 checks passed
+TAZLARM package validation: 71/71 checks passed
 [PASS] Required file: .github/workflows/build-tazalarm.yml
 [PASS] Required file: app/build.gradle.kts
 [PASS] Required file: app/src/main/AndroidManifest.xml
@@ -19,7 +19,7 @@ TAZLARM package validation: 67/67 checks passed
 [PASS] Required file: personal-release.keystore
 [PASS] All Android XML parses — 20 XML files
 [PASS] Application ID retained
-[PASS] Version 2.2.5 / 225
+[PASS] Version 2.2.6 / 226
 [PASS] TAZLARM app label
 [PASS] Alarm notification channel description
 [PASS] Exact alarm permission
@@ -68,9 +68,13 @@ TAZLARM package validation: 67/67 checks passed
 [PASS] Two-minute screen-off test
 [PASS] Compose keyboard imports are compile-safe
 [PASS] Default routine unit test matches blank onboarding
+[PASS] Routine cards support long-press drag and buttons
+[PASS] Post-alarm Home fades from black to light
+[PASS] Step-specific quiet periods
+[PASS] Alarm runs over lock screen with permission guidance
 [PASS] Kotlin delimiter balance — 19 Kotlin files
 [PASS] No generated build/cache folders
 [PASS] Release keystore opens and alias exists
 ```
 
-The GitHub Actions workflow remains the authoritative full Android compilation, unit-test, APK-signing and signature-verification step.
+The included GitHub Actions workflow remains the authoritative full Android unit-test and release compilation step.

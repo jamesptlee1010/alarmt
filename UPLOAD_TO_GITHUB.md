@@ -1,11 +1,8 @@
-# Upload TAZLARM v2.2.5 and build the APK
+# Upload TAZLARM v2.2.6 and build the APK
 
-1. Extract `TAZLARM_v2.2.5_FULL_PROJECT.zip`.
-2. Open the locally cloned private GitHub repository folder.
-3. Delete the old project contents but keep the hidden `.git` folder.
-4. Copy every extracted item into the repository folder, including `.github`.
-5. In GitHub Desktop, commit with a message such as `Update TAZLARM to v2.2.5`.
-6. Push origin.
-7. Open the repository on GitHub.
-8. Open **Actions → Build TAZLARM APK** and run the workflow.
-9. Download the artifact named `TAZLARM-v2.2.5-installable-APK`.
+1. Extract `TAZLARM_v2.2.6_FULL_PROJECT.zip`.
+2. Replace the contents of your local cloned repository with the extracted project contents, preserving the repository's hidden `.git` folder.
+3. Confirm `.github`, `app`, `gradle`, `build.gradle.kts`, `settings.gradle.kts` and `personal-release.keystore` are at the repository root.
+4. Commit and push using GitHub Desktop.
+5. Open GitHub → Actions → Build TAZLARM APK → Run workflow.
+6. Download `TAZLARM-v2.2.6-installable-APK` from the successful run.

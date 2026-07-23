@@ -72,6 +72,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -91,6 +94,11 @@ class AlarmActivity : ComponentActivity() {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
+        }
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         AppRepository.initialise(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -132,9 +140,14 @@ class AlarmActivity : ComponentActivity() {
                     },
                     onComplete = { run ->
                         AppRepository.saveRun(run)
+                        AppRepository.setTheme(ThemeMode.LIGHT)
                         AppRepository.logReliability(alarm.id, "Routine completed in ${run.durationSeconds} seconds")
                         startService(Intent(this, AlarmService::class.java).apply { action = AlarmService.ACTION_STOP })
-                        finishAndRemoveTask()
+                        startActivity(Intent(this, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            putExtra(MainActivity.EXTRA_POST_ALARM_FADE, true)
+                        })
+                        finish()
                     }
                 )
             }
@@ -172,6 +185,13 @@ private fun AlarmChallengeScreen(
     val questionTarget = if (penaltyMode) 50 else currentStep?.questionsRequired ?: 0
     val activeTopics = if (penaltyMode) listOf(Topic.MATHS, Topic.LOGIC, Topic.GENERAL_KNOWLEDGE) else currentStep?.topics.orEmpty()
 
+    fun pauseAlarm(durationMs: Long) {
+        context.startService(Intent(context, AlarmService::class.java).apply {
+            action = AlarmService.ACTION_PAUSE_AUDIO
+            putExtra(AlarmService.EXTRA_PAUSE_MS, durationMs)
+        })
+    }
+
     fun nextQuestion() {
         question = QuestionEngine.next(activeTopics, recentQuestionIds.takeLast(12))
         question?.id?.let {
@@ -179,13 +199,7 @@ private fun AlarmChallengeScreen(
             if (recentQuestionIds.size > 30) recentQuestionIds.removeAt(0)
         }
         answer = ""
-    }
-
-    fun pauseAudio() {
-        context.startService(Intent(context, AlarmService::class.java).apply {
-            action = AlarmService.ACTION_PAUSE_AUDIO
-            putExtra(AlarmService.EXTRA_PAUSE_MS, 5_000L)
-        })
+        pauseAlarm(7_000L)
     }
 
     fun completeRoutine() {
@@ -238,7 +252,6 @@ private fun AlarmChallengeScreen(
             topicCorrect[activeQuestion.topic] = (topicCorrect[activeQuestion.topic] ?: 0) + 1
             correctCount += 1
             feedback = "Correct — keep moving"
-            pauseAudio()
             if (correctCount >= questionTarget) {
                 if (penaltyMode) {
                     results += RunStepResult(
@@ -266,7 +279,6 @@ private fun AlarmChallengeScreen(
             val score = captureUri?.let { ImageSimilarity.bestScore(context, it, step.referenceUris) } ?: 0f
             if (score >= step.photoThreshold) {
                 feedback = "Photo verified (${(score * 100).roundToInt()}% match)"
-                pauseAudio()
                 completeStep(successAttempts = attempts, correct = 0)
             } else {
                 feedback = "Photo did not match closely enough (${(score * 100).roundToInt()}%). Try a clearer angle."
@@ -283,7 +295,11 @@ private fun AlarmChallengeScreen(
     }
 
     LaunchedEffect(stepIndex, penaltyMode) {
-        if (penaltyMode || currentStep?.type == StepType.QUESTIONS) nextQuestion()
+        when {
+            penaltyMode || currentStep?.type == StepType.QUESTIONS -> nextQuestion()
+            currentStep?.type == StepType.BARCODE -> pauseAlarm(20_000L)
+            currentStep?.type == StepType.PHOTO -> pauseAlarm(30_000L)
+        }
         correctCount = 0
         attempts = 0
         answer = ""
@@ -408,7 +424,6 @@ private fun AlarmChallengeScreen(
                                                 }
                                                 acceptedCodes.any { BarcodeIdentity.matches(it, barcode) } -> {
                                                     feedback = "Barcode accepted"
-                                                    pauseAudio()
                                                     completeStep(successAttempts = attempts, correct = 0)
                                                 }
                                                 else -> {
