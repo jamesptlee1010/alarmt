@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.2 / 222", 'versionCode = 222' in build and 'versionName = "2.2.2"' in build)
+check("Version 2.2.3 / 223", 'versionCode = 223' in build and 'versionName = "2.2.3"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -99,6 +99,14 @@ check(
     and "androidx.compose.ui.text.input.KeyboardActions" not in main_source
     and "androidx.compose.foundation.text.KeyboardOptions" in main_source
     and "androidx.compose.foundation.text.KeyboardActions" in alarm_ui,
+)
+
+default_routine_test = read = (ROOT / "app/src/test/java/com/james/mathwakealarm/DefaultRoutineTest.kt").read_text(encoding="utf-8")
+check(
+    "Default routine unit test matches blank onboarding",
+    "defaultRoutineStartsBlankForUserConfiguration" in default_routine_test
+    and "assertTrue(defaultRoutine().isEmpty())" in default_routine_test
+    and "mustGetUpPresetStillProvidesTheFourStageExample" in default_routine_test,
 )
 
 # Basic Kotlin delimiter balance and no parser-level errors from the local compiler.

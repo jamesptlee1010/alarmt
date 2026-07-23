@@ -1,4 +1,4 @@
-TAZLARM v2.2.2 implemented scope
+TAZLARM v2.2.3 implemented scope
 
 Key updates in this build:
 - Rebranded visible in-app naming from TAZALARM to TAZLARM.
@@ -17,3 +17,7 @@ Key updates in this build:
 - Sunrise now runs for at least two minutes, including migration of older 60-second alarms.
 - Removed the sunrise countdown/remaining-time label from the live alarm screen.
 - Updated app version and GitHub APK artifact to v2.2.2.
+
+- Updated the stale DefaultRoutineTest so it validates the intentionally blank first-run routine rather than the retired four-step default.
+- Preserved a separate test for the optional four-stage Must Get Up preset.
+- Updated app and GitHub artifact version to v2.2.3.

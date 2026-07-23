@@ -1,4 +1,4 @@
-TAZLARM package validation: 58/58 checks passed
+TAZLARM package validation: 59/59 checks passed
 [PASS] Required file: .github/workflows/build-tazalarm.yml
 [PASS] Required file: app/build.gradle.kts
 [PASS] Required file: app/src/main/AndroidManifest.xml
@@ -14,7 +14,7 @@ TAZLARM package validation: 58/58 checks passed
 [PASS] Required file: personal-release.keystore
 [PASS] All Android XML parses — 20 XML files
 [PASS] Application ID retained
-[PASS] Version 2.2.2 / 222
+[PASS] Version 2.2.3 / 223
 [PASS] TAZLARM app label
 [PASS] Alarm notification channel description
 [PASS] Exact alarm permission
@@ -54,6 +54,7 @@ TAZLARM package validation: 58/58 checks passed
 [PASS] Progress and reliability logging
 [PASS] Two-minute screen-off test
 [PASS] Compose keyboard imports are compile-safe
+[PASS] Default routine unit test matches blank onboarding
 [PASS] Kotlin delimiter balance — 19 Kotlin files
 [PASS] No generated build/cache folders
 [PASS] Release keystore opens and alias exists
