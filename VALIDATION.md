@@ -1,30 +1,59 @@
-# TAZLARM v2.2.0 validation
-
-The package validator has been updated for the v2.2.0 specification rather than the superseded v2.1.3 expectations.
-
-Validated expectations include:
-
-- versionCode 220 and versionName 2.2.0
-- visible application label TAZLARM
-- selected sneezing-cat branding with the TAZLARM wordmark
-- generic multi-barcode helper wording
-- exact alarm and backup-delivery architecture
-- one-minute sunrise and brightness ramp
-- centred Home branding and no duplicate Home Settings shortcut
-- blank first-run name field
-- clock-based alarm-time selection
-- blank repeat-day selection with one-time scheduling
-- empty first-run routine builder
-- multiple acceptable barcodes per barcode step
-- dismissible completed-alarm summary
-- Edit Alarm and Edit Routine actions on the Next Alarm card
-- Dance Moms and Teen Mom 2 topic coverage
-- easier maths generation
-- black alarm answer text
-- 50-question recovery route
-- compile-safe Compose keyboard imports
-- valid release keystore
-
-Result: **55/55 package checks passed locally.**
-
-The GitHub Actions run remains the authoritative Android compilation, unit-test, APK-signing and signature-verification step.
+TAZLARM package validation: 58/58 checks passed
+[PASS] Required file: .github/workflows/build-tazalarm.yml
+[PASS] Required file: app/build.gradle.kts
+[PASS] Required file: app/src/main/AndroidManifest.xml
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/AlarmScheduler.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/AlarmService.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/AlarmActivity.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/AppUi.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/Onboarding.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/BrandLogo.kt
+[PASS] Required file: app/src/main/java/com/james/mathwakealarm/BarcodeIdentity.kt
+[PASS] Required file: app/src/main/res/drawable-nodpi/tazalarm_logo_full.png
+[PASS] Required file: app/src/main/res/drawable-nodpi/tazalarm_cat_only.png
+[PASS] Required file: personal-release.keystore
+[PASS] All Android XML parses — 20 XML files
+[PASS] Application ID retained
+[PASS] Version 2.2.2 / 222
+[PASS] TAZLARM app label
+[PASS] Alarm notification channel description
+[PASS] Exact alarm permission
+[PASS] Full-screen alarm permission
+[PASS] Direct foreground-service PendingIntent
+[PASS] Ten-second backup trigger
+[PASS] Exact allow-while-idle scheduling
+[PASS] Primary cancels backup
+[PASS] Foreground service is sticky
+[PASS] Partial wake lock
+[PASS] Gradual 10-second volume ramp
+[PASS] Active alarm recovery
+[PASS] Reboot/time/update rescheduling
+[PASS] Two-minute sunrise minimum
+[PASS] Existing alarms migrate to two-minute sunrise
+[PASS] No sunrise countdown on live alarm screen
+[PASS] Per-window brightness ramp
+[PASS] Night-to-day horizon renderer
+[PASS] Selected sneezing-cat branding used universally
+[PASS] Multiple alarms in onboarding
+[PASS] Five main navigation areas
+[PASS] Home logo is centred
+[PASS] No duplicate Home settings shortcut
+[PASS] Stay Awake feature excluded
+[PASS] Generic barcode title
+[PASS] Generic barcode helper
+[PASS] Generic scanner action
+[PASS] No Kitchen wording in production source
+[PASS] Alarm answer text is black
+[PASS] Robust barcode identity matching
+[PASS] Barcode recovery route visible
+[PASS] Old barcode storage remains compatible
+[PASS] Routine presets preserve registrations
+[PASS] Live photo capture
+[PASS] 50-question irreversible penalty
+[PASS] Question topic coverage
+[PASS] Progress and reliability logging
+[PASS] Two-minute screen-off test
+[PASS] Compose keyboard imports are compile-safe
+[PASS] Kotlin delimiter balance — 19 Kotlin files
+[PASS] No generated build/cache folders
+[PASS] Release keystore opens and alias exists

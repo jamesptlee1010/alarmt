@@ -46,7 +46,7 @@ data class AlarmConfig(
     val days: List<Int> = emptyList(),
     val enabled: Boolean = true,
     val skipOccurrenceAt: Long = 0L,
-    val sunriseSeconds: Int = 60,
+    val sunriseSeconds: Int = 120,
     val vibrate: Boolean = true,
     val routine: List<RoutineStep> = defaultRoutine()
 )

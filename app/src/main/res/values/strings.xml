@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">TAZLARM</string>
     <string name="alarm_channel_name">TAZLARM active alarm</string>
+    <string name="alarm_channel_description">Keeps the active TAZLARM alarm visible and sounding until the wake-up routine is completed.</string>
 </resources>

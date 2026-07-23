@@ -481,7 +481,7 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
                 OutlinedTextField(
                     value = sunrise,
                     onValueChange = { sunrise = it.filter(Char::isDigit).take(3) },
-                    label = { Text("Sunrise duration in seconds") },
+                    label = { Text("Sunrise duration in seconds (minimum 120)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -499,7 +499,7 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
                                     hour = hour.toIntOrNull()?.coerceIn(0, 23) ?: alarm.hour,
                                     minute = minute.toIntOrNull()?.coerceIn(0, 59) ?: alarm.minute,
                                     days = days.ifEmpty { alarm.days },
-                                    sunriseSeconds = sunrise.toIntOrNull()?.coerceIn(15, 600) ?: 60,
+                                    sunriseSeconds = sunrise.toIntOrNull()?.coerceIn(120, 600) ?: 120,
                                     vibrate = vibrate
                                 )
                             )
@@ -956,7 +956,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZLARM v2.2.0", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.2", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }

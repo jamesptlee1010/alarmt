@@ -13,8 +13,8 @@ android {
         applicationId = "com.james.mathwakealarm"
         minSdk = 26
         targetSdk = 36
-        versionCode = 220
-        versionName = "2.2.0"
+        versionCode = 222
+        versionName = "2.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

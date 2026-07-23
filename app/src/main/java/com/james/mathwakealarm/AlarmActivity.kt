@@ -135,7 +135,7 @@ private fun AlarmChallengeScreen(
     onComplete: (AlarmRun) -> Unit
 ) {
     val context = LocalContext.current
-    val sunriseDuration = alarm.sunriseSeconds.coerceAtLeast(15) * 1000L
+    val sunriseDuration = alarm.sunriseSeconds.coerceAtLeast(120) * 1000L
     var sunriseProgress by remember { mutableFloatStateOf(0f) }
     var stepIndex by remember { mutableIntStateOf(0) }
     var penaltyMode by remember { mutableStateOf(false) }
@@ -457,10 +457,6 @@ private fun AlarmChallengeScreen(
                 trackColor = Color.White.copy(alpha = .25f)
             )
             Spacer(Modifier.height(9.dp))
-            Text(
-                "Sunrise ${(sunriseProgress * 60).roundToInt().coerceAtMost(60)} / 60 seconds",
-                color = Color.White.copy(alpha = .9f)
-            )
             if (!penaltyMode) {
                 TextButton(onClick = { showPenaltyConfirm = true }) {
                     Text("Having trouble? Use the 50-question penalty", color = Color.White)

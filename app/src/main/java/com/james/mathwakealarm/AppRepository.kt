@@ -26,9 +26,15 @@ object AppRepository {
         if (::appContext.isInitialized) return
         appContext = context.applicationContext
         val raw = prefs().getString(STATE_KEY, null)
-        mutableState.value = raw?.let {
+        val loaded = raw?.let {
             runCatching { json.decodeFromString<AppState>(it) }.getOrNull()
         } ?: AppState()
+        mutableState.value = loaded.copy(
+            alarms = loaded.alarms.map { alarm ->
+                if (alarm.sunriseSeconds < 120) alarm.copy(sunriseSeconds = 120) else alarm
+            }
+        )
+        prefs().edit().putString(STATE_KEY, json.encodeToString(mutableState.value)).apply()
     }
 
     private fun prefs() = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

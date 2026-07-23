@@ -1,4 +1,4 @@
-TAZLARM v2.2.0 implemented scope
+TAZLARM v2.2.2 implemented scope
 
 Key updates in this build:
 - Rebranded visible in-app naming from TAZALARM to TAZLARM.
@@ -12,4 +12,8 @@ Key updates in this build:
 - Home next-alarm card now offers Edit Alarm and Edit Routine instead of Test Alarm.
 - Added Dance Moms and Teen Mom 2 trivia topic banks.
 - Maths question generation was softened so addition/subtraction operands stay within two digits.
-- Updated app version to 2.2.0.
+- Updated app version to 2.2.1, including the notification-channel resource compile fix.
+
+- Sunrise now runs for at least two minutes, including migration of older 60-second alarms.
+- Removed the sunrise countdown/remaining-time label from the live alarm screen.
+- Updated app version and GitHub APK artifact to v2.2.2.

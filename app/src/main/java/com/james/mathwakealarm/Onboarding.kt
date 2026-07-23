@@ -288,7 +288,7 @@ fun OnboardingScreen(appState: AppState) {
                         Spacer(Modifier.height(14.dp))
                         Text("Everything is ready", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            "TAZLARM will use a one-minute sunrise, rising alarm volume and your configured routine.",
+                            "TAZLARM will use a two-minute sunrise, rising alarm volume and your configured routine.",
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
