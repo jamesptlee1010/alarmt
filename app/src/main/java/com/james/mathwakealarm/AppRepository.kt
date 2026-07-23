@@ -67,7 +67,10 @@ object AppRepository {
     }
 
     fun addAlarm(copyFrom: AlarmConfig? = null): AlarmConfig {
-        val created = (copyFrom ?: defaultAlarm()).copy(
+        // A brand-new alarm starts from the first configured alarm so registered
+        // barcode and photo steps are not silently lost. It remains fully editable.
+        val template = copyFrom ?: mutableState.value.alarms.firstOrNull() ?: defaultAlarm()
+        val created = template.copy(
             id = UUID.randomUUID().toString(),
             label = if (copyFrom == null) "New Alarm" else "${copyFrom.label} Copy",
             skipOccurrenceAt = 0L

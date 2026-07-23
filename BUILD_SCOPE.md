@@ -1,4 +1,4 @@
-# TAZALARM v2.1.0 implemented scope
+# TAZALARM v2.1.2 implemented scope
 
 ## Identity and design
 
@@ -45,3 +45,13 @@
 - Active-alarm recovery.
 - Reboot/time/timezone/update rescheduling.
 - Reliability event log and two-minute screen-off test.
+
+
+## v2.1.2 corrective scope
+
+- Black alarm answer text, cursor, label and outline.
+- Exact supplied transparent TAZALARM logo assets used in Compose and launcher resources.
+- Robust barcode identity capture and comparison with legacy compatibility.
+- UPC-A/EAN-13 equivalence and invisible-character normalisation.
+- Visible 50-question recovery route from the barcode card.
+- Preset/new-alarm preservation of barcode and photo registrations.

@@ -24,6 +24,9 @@ required = [
     "app/src/main/java/com/james/mathwakealarm/AppUi.kt",
     "app/src/main/java/com/james/mathwakealarm/Onboarding.kt",
     "app/src/main/java/com/james/mathwakealarm/BrandLogo.kt",
+    "app/src/main/java/com/james/mathwakealarm/BarcodeIdentity.kt",
+    "app/src/main/res/drawable-nodpi/tazalarm_logo_full.png",
+    "app/src/main/res/drawable-nodpi/tazalarm_cat_only.png",
     "personal-release.keystore",
 ]
 for item in required:
@@ -51,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.1.0 / 210", 'versionCode = 210' in build and 'versionName = "2.1.0"' in build)
+check("Version 2.1.2 / 212", 'versionCode = 212' in build and 'versionName = "2.1.2"' in build)
 check("TAZALARM app label", '<string name="app_name">TAZALARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
 check("Full-screen alarm permission", "android.permission.USE_FULL_SCREEN_INTENT" in manifest)
@@ -67,13 +70,18 @@ check("Reboot/time/update rescheduling", all(x in manifest for x in ["BOOT_COMPL
 check("One-minute sunrise default", "sunriseSeconds: Int = 60" in main_source and "sunriseDuration" in alarm_ui)
 check("Per-window brightness ramp", "screenBrightness" in alarm_ui)
 check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "red", "orange", "daylight", "SunriseHorizon"]))
-check("Sneezing-cat universal logo", "SneezingCatLogo" in main_source and "drawPath(drop" in main_source)
+check("Exact supplied logo used universally", "R.drawable.tazalarm_logo_full" in main_source and "R.drawable.tazalarm_cat_only" in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_logo_full.png").is_file())
 check("Multiple alarms in onboarding", "queuedAlarms" in onboarding and "completeOnboarding(name, alarms)" in onboarding)
 check("Five main navigation areas", all(x in app_ui for x in ["HOME", "ALARMS", "ROUTINES", "PROGRESS", "SETTINGS"]))
 check("Generic barcode title", 'Text("Scan Barcode"' in alarm_ui and 'title = "Scan Barcode"' in main_source)
 check("Generic barcode helper", "Barcode must match your saved code" in alarm_ui)
 check("Generic scanner action", "Open Scanner" in alarm_ui)
 check("No Kitchen wording in production source", re.search(r"\bkitchen\b", main_source, re.I) is None)
+check("Alarm answer text is black", all(x in alarm_ui for x in ["focusedTextColor = Color.Black", "unfocusedTextColor = Color.Black", "cursorColor = Color.Black", "focusedBorderColor = Color.Black"]))
+check("Robust barcode identity matching", all(x in main_source for x in ["object BarcodeIdentity", "rawBytes", "canonicalGtin", "BarcodeIdentity.matches", "BarcodeIdentity.capture"]))
+check("Barcode recovery route visible", "Barcode not working? Use recovery route" in alarm_ui and "50 correct answers" in alarm_ui)
+check("Old barcode storage remains compatible", "if (!value.startsWith" in main_source and "raw = value" in main_source)
+check("Routine presets preserve registrations", "preserveRoutineRegistrations" in app_ui and "barcodeValue = configured.barcodeValue" in app_ui)
 check("Live photo capture", "ActivityResultContracts.TakePicture" in alarm_ui and "ImageSimilarity.bestScore" in alarm_ui)
 check("50-question irreversible penalty", "questionTarget = if (penaltyMode) 50" in alarm_ui and "cannot return" in alarm_ui)
 check("Question topic coverage", all(topic in main_source for topic in ["WORLD_WAR_II", "CARL_JUNG", "TWENTIETH_CENTURY", "GEOGRAPHY", "SCIENCE", "SPORT", "LOGIC"]))

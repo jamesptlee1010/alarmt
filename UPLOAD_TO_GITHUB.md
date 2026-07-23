@@ -1,4 +1,4 @@
-# Upload TAZALARM v2.1.0 to GitHub
+# Upload TAZALARM v2.1.2 to GitHub
 
 Upload the **contents** of the extracted package, not an extra outer folder.
 

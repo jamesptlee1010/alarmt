@@ -78,7 +78,7 @@ fun OnboardingScreen(appState: AppState) {
     fun scanBarcode() {
         GmsBarcodeScanning.getClient(context).startScan()
             .addOnSuccessListener { result ->
-                barcode = result.rawValue.orEmpty()
+                barcode = BarcodeIdentity.capture(result)
                 message = if (barcode.isBlank()) "No barcode value detected" else "Barcode registered"
             }
             .addOnFailureListener { message = it.localizedMessage ?: "Scanner could not start" }

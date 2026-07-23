@@ -1,4 +1,4 @@
-# TAZALARM v2.1.0
+# TAZALARM v2.1.2
 
 TAZALARM is a personal Android sunrise alarm that keeps sounding until its configured wake-up routine has been completed.
 
@@ -6,11 +6,22 @@ This package is arranged for a **GitHub Actions build**, so Android Studio is no
 
 ```text
 applicationId: com.james.mathwakealarm
-version: 2.1.0 (210)
+version: 2.1.2 (212)
 minimum Android: 8.0 / API 26
 ```
 
 ## What is included
+
+### v2.1.2 fixes
+
+- Alarm answer field now uses black typed text, black cursor, black label and black outline on a white input surface.
+- Uses the exact supplied sneezing-cat-and-TAZALARM artwork throughout the app, with the cat artwork used for the launcher icon.
+- Barcode registration now stores raw bytes, raw text, display text and format instead of only one scanner string.
+- Barcode matching ignores invisible Unicode characters and recognises UPC-A / EAN-13 leading-zero representations of the same GTIN.
+- Existing plain-string barcode registrations from earlier builds remain supported.
+- A prominent **Barcode not working? Use recovery route** control is shown inside the barcode step. The recovery route still requires 50 correct answers and is not a direct alarm bypass.
+- Routine presets and newly created alarms retain existing barcode/photo registrations instead of silently losing them.
+
 
 ### New TAZALARM design
 
@@ -79,8 +90,8 @@ minimum Android: 8.0 / API 26
 4. Commit to `main`.
 5. Open **Actions → Build TAZALARM APK**.
 6. Run the workflow or open the automatically started run.
-7. After the green tick, download **TAZALARM-v2.1.0-installable-APK** from Artifacts.
-8. Unzip the artifact and install `TAZALARM-v2.1.0.apk` on the phone.
+7. After the green tick, download **TAZALARM-v2.1.2-installable-APK** from Artifacts.
+8. Unzip the artifact and install `TAZALARM-v2.1.2.apk` on the phone.
 
 ## Critical signing note
 

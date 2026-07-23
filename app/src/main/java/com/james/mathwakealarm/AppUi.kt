@@ -558,7 +558,7 @@ private fun RoutinesScreen(appState: AppState, padding: PaddingValues) {
             onScan = {
                 GmsBarcodeScanning.getClient(context).startScan()
                     .addOnSuccessListener { barcode ->
-                        editingStep = editingStep?.copy(barcodeValue = barcode.rawValue.orEmpty(), title = "Scan Barcode")
+                        editingStep = editingStep?.copy(barcodeValue = BarcodeIdentity.capture(barcode), title = "Scan Barcode")
                     }
                     .addOnFailureListener { Toast.makeText(context, "Scanner could not start", Toast.LENGTH_SHORT).show() }
             },
@@ -626,10 +626,10 @@ private fun RoutinesScreen(appState: AppState, padding: PaddingValues) {
             ) { Icon(Icons.Outlined.Add, null); Text(" Add Step") }
 
             SectionTitle("ROUTINE PRESETS")
-            PresetCard("Quick Start", "2 questions → barcode", "2–3 min") { persistRoutine(quickStartRoutine()) }
-            PresetCard("Normal Workday", "2 questions → barcode → 3 questions", "4–6 min") { persistRoutine(normalWorkdayRoutine()) }
-            PresetCard("Must Get Up", "questions → barcode → questions → photo", "6–9 min") { persistRoutine(mustGetUpRoutine()) }
-            PresetCard("Weekend", "lighter questions → photo", "2–4 min") { persistRoutine(weekendRoutine()) }
+            PresetCard("Quick Start", "2 questions → barcode", "2–3 min") { persistRoutine(preserveRoutineRegistrations(alarm.routine, quickStartRoutine())) }
+            PresetCard("Normal Workday", "2 questions → barcode → 3 questions", "4–6 min") { persistRoutine(preserveRoutineRegistrations(alarm.routine, normalWorkdayRoutine())) }
+            PresetCard("Must Get Up", "questions → barcode → questions → photo", "6–9 min") { persistRoutine(preserveRoutineRegistrations(alarm.routine, mustGetUpRoutine())) }
+            PresetCard("Weekend", "lighter questions → photo", "2–4 min") { persistRoutine(preserveRoutineRegistrations(alarm.routine, weekendRoutine())) }
         }
         Spacer(Modifier.height(10.dp))
     }
@@ -943,7 +943,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZALARM v2.1.0", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZALARM v2.1.2", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -992,6 +992,34 @@ private fun stepIcon(type: StepType): ImageVector = when (type) {
     StepType.QUESTIONS -> Icons.Outlined.QuestionMark
     StepType.BARCODE -> Icons.Outlined.QrCodeScanner
     StepType.PHOTO -> Icons.Outlined.CameraAlt
+}
+
+
+private fun preserveRoutineRegistrations(
+    existing: List<RoutineStep>,
+    preset: List<RoutineStep>
+): List<RoutineStep> {
+    val barcodes = existing.filter { it.type == StepType.BARCODE && it.barcodeValue.isNotBlank() }
+    val photos = existing.filter { it.type == StepType.PHOTO && it.referenceUris.isNotEmpty() }
+    var barcodeIndex = 0
+    var photoIndex = 0
+
+    return preset.map { step ->
+        when (step.type) {
+            StepType.BARCODE -> {
+                val configured = barcodes.getOrNull(barcodeIndex++) ?: barcodes.firstOrNull()
+                if (configured == null) step else step.copy(barcodeValue = configured.barcodeValue)
+            }
+            StepType.PHOTO -> {
+                val configured = photos.getOrNull(photoIndex++) ?: photos.firstOrNull()
+                if (configured == null) step else step.copy(
+                    referenceUris = configured.referenceUris,
+                    photoThreshold = configured.photoThreshold
+                )
+            }
+            StepType.QUESTIONS -> step
+        }
+    }
 }
 
 private fun stepReady(step: RoutineStep): Boolean = when (step.type) {

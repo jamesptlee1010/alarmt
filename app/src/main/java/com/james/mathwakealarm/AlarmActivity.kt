@@ -42,6 +42,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -301,8 +303,11 @@ private fun AlarmChallengeScreen(
                 .padding(horizontal = 18.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SneezingCatLogo(Modifier.size(76.dp), Color.White)
-            Text("TAZALARM", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 4.sp)
+            BrandMark(
+                modifier = Modifier.size(width = 190.dp, height = 154.dp),
+                color = Color.White,
+                fullLogo = true
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.VolumeUp, null, tint = TazAmber, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.width(6.dp))
@@ -341,8 +346,25 @@ private fun AlarmChallengeScreen(
                                     value = answer,
                                     onValueChange = { answer = it },
                                     modifier = Modifier.fillMaxWidth(),
-                                    label = { Text("Enter answer") },
+                                    label = { Text("Enter answer", color = Color.Black) },
                                     singleLine = true,
+                                    textStyle = TextStyle(
+                                        color = Color.Black,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.Black,
+                                        unfocusedTextColor = Color.Black,
+                                        disabledTextColor = Color.Black,
+                                        cursorColor = Color.Black,
+                                        focusedBorderColor = Color.Black,
+                                        unfocusedBorderColor = Color.Black,
+                                        focusedLabelColor = Color.Black,
+                                        unfocusedLabelColor = Color.Black,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
+                                    ),
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { submitAnswer() })
                                 )
@@ -360,12 +382,21 @@ private fun AlarmChallengeScreen(
                                     attempts += 1
                                     GmsBarcodeScanning.getClient(context).startScan()
                                         .addOnSuccessListener { barcode ->
-                                            val scanned = barcode.rawValue.orEmpty()
-                                            if (step.barcodeValue.isNotBlank() && scanned == step.barcodeValue) {
-                                                feedback = "Barcode accepted"
-                                                pauseAudio()
-                                                completeStep(successAttempts = attempts, correct = 0)
-                                            } else feedback = "That barcode does not match your saved code."
+                                            when {
+                                                step.barcodeValue.isBlank() -> {
+                                                    feedback = "No barcode is registered for this step. Use the recovery route below, then register one in Routines."
+                                                    AppRepository.logReliability(alarm.id, "Barcode step has no registered code")
+                                                }
+                                                BarcodeIdentity.matches(step.barcodeValue, barcode) -> {
+                                                    feedback = "Barcode accepted"
+                                                    pauseAudio()
+                                                    completeStep(successAttempts = attempts, correct = 0)
+                                                }
+                                                else -> {
+                                                    feedback = "That scan did not match. Try again, or use ‘Barcode not working?’ below."
+                                                    AppRepository.logReliability(alarm.id, "Barcode mismatch attempt $attempts")
+                                                }
+                                            }
                                         }
                                         .addOnFailureListener { feedback = "Scanner could not start. Try again." }
                                 },
@@ -374,6 +405,17 @@ private fun AlarmChallengeScreen(
                                 Icon(Icons.Outlined.QrCodeScanner, null)
                                 Text(" Open Scanner")
                             }
+                            OutlinedButton(
+                                onClick = { showPenaltyConfirm = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Barcode not working? Use recovery route")
+                            }
+                            Text(
+                                "The recovery route requires 50 correct answers; it does not simply stop the alarm.",
+                                color = Color(0xFF60728B),
+                                fontSize = 12.sp
+                            )
                         }
                         currentStep?.type == StepType.PHOTO -> {
                             val step = requireNotNull(currentStep)

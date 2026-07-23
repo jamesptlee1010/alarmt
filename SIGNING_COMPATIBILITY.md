@@ -5,7 +5,7 @@ Android only accepts an APK as an update when these both match the installed app
 1. Application ID / package name.
 2. Signing certificate.
 
-TAZALARM v2.1.0 preserves the previous package name:
+TAZALARM v2.1.2 preserves the previous package name:
 
 ```text
 com.james.mathwakealarm
