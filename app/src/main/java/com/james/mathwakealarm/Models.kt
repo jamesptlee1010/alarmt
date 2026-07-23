@@ -19,7 +19,9 @@ enum class Topic(val displayName: String) {
     SCIENCE("Science"),
     SPORT("Sport"),
     GENERAL_KNOWLEDGE("General Knowledge"),
-    LOGIC("Logic")
+    LOGIC("Logic"),
+    DANCE_MOMS("Dance Moms"),
+    TEEN_MOM_2("Teen Mom 2")
 }
 
 @Serializable
@@ -30,6 +32,7 @@ data class RoutineStep(
     val questionsRequired: Int = 0,
     val topics: List<Topic> = listOf(Topic.MATHS),
     val barcodeValue: String = "",
+    val barcodeValues: List<String> = emptyList(),
     val referenceUris: List<String> = emptyList(),
     val photoThreshold: Float = 0.72f
 )
@@ -40,7 +43,7 @@ data class AlarmConfig(
     val label: String = "Weekday Alarm",
     val hour: Int = 6,
     val minute: Int = 30,
-    val days: List<Int> = listOf(1, 2, 3, 4, 5),
+    val days: List<Int> = emptyList(),
     val enabled: Boolean = true,
     val skipOccurrenceAt: Long = 0L,
     val sunriseSeconds: Int = 60,
@@ -91,41 +94,16 @@ data class ReliabilityEvent(
 
 @Serializable
 data class AppState(
-    val userName: String = "James",
+    val userName: String = "",
     val onboardingComplete: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val alarms: List<AlarmConfig> = listOf(defaultAlarm()),
     val runs: List<AlarmRun> = emptyList(),
-    val reliabilityEvents: List<ReliabilityEvent> = emptyList()
+    val reliabilityEvents: List<ReliabilityEvent> = emptyList(),
+    val dismissedRunIds: List<String> = emptyList()
 )
 
-fun defaultRoutine(): List<RoutineStep> = listOf(
-    RoutineStep(
-        type = StepType.QUESTIONS,
-        title = "Answer 2 Questions",
-        questionsRequired = 2,
-        topics = listOf(Topic.MATHS, Topic.WORLD_WAR_II)
-    ),
-    RoutineStep(
-        type = StepType.BARCODE,
-        title = "Scan Barcode"
-    ),
-    RoutineStep(
-        type = StepType.QUESTIONS,
-        title = "Answer 3 Questions",
-        questionsRequired = 3,
-        topics = listOf(
-            Topic.MATHS,
-            Topic.WORLD_WAR_II,
-            Topic.CARL_JUNG,
-            Topic.TWENTIETH_CENTURY
-        )
-    ),
-    RoutineStep(
-        type = StepType.PHOTO,
-        title = "Verify Photo"
-    )
-)
+fun defaultRoutine(): List<RoutineStep> = emptyList()
 
 fun defaultAlarm(): AlarmConfig = AlarmConfig(routine = defaultRoutine())
 
@@ -139,9 +117,38 @@ fun quickStartRoutine(): List<RoutineStep> = listOf(
     RoutineStep(type = StepType.BARCODE, title = "Scan Barcode")
 )
 
-fun normalWorkdayRoutine(): List<RoutineStep> = defaultRoutine().dropLast(1)
+fun normalWorkdayRoutine(): List<RoutineStep> = listOf(
+    RoutineStep(
+        type = StepType.QUESTIONS,
+        title = "Answer 2 Questions",
+        questionsRequired = 2,
+        topics = listOf(Topic.MATHS, Topic.GENERAL_KNOWLEDGE)
+    ),
+    RoutineStep(type = StepType.BARCODE, title = "Scan Barcode"),
+    RoutineStep(
+        type = StepType.QUESTIONS,
+        title = "Answer 3 Questions",
+        questionsRequired = 3,
+        topics = listOf(Topic.MATHS, Topic.GENERAL_KNOWLEDGE, Topic.LOGIC)
+    )
+)
 
-fun mustGetUpRoutine(): List<RoutineStep> = defaultRoutine()
+fun mustGetUpRoutine(): List<RoutineStep> = listOf(
+    RoutineStep(
+        type = StepType.QUESTIONS,
+        title = "Answer 2 Questions",
+        questionsRequired = 2,
+        topics = listOf(Topic.MATHS, Topic.GENERAL_KNOWLEDGE)
+    ),
+    RoutineStep(type = StepType.BARCODE, title = "Scan Barcode"),
+    RoutineStep(
+        type = StepType.QUESTIONS,
+        title = "Answer 3 Questions",
+        questionsRequired = 3,
+        topics = listOf(Topic.MATHS, Topic.GENERAL_KNOWLEDGE, Topic.LOGIC)
+    ),
+    RoutineStep(type = StepType.PHOTO, title = "Verify Photo")
+)
 
 fun weekendRoutine(): List<RoutineStep> = listOf(
     RoutineStep(

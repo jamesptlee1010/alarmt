@@ -376,18 +376,19 @@ private fun AlarmChallengeScreen(
                             val step = requireNotNull(currentStep)
                             Icon(Icons.Outlined.QrCodeScanner, null, tint = TazBlue, modifier = Modifier.size(58.dp))
                             Text("Scan Barcode", color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 29.sp)
-                            Text("Barcode must match your saved code", color = Color(0xFF60728B))
+                            val acceptedCodes = (step.barcodeValues + listOf(step.barcodeValue)).filter { it.isNotBlank() }.distinct()
+                            Text("Barcode must match one of your saved codes", color = Color(0xFF60728B))
                             Button(
                                 onClick = {
                                     attempts += 1
                                     GmsBarcodeScanning.getClient(context).startScan()
                                         .addOnSuccessListener { barcode ->
                                             when {
-                                                step.barcodeValue.isBlank() -> {
+                                                acceptedCodes.isEmpty() -> {
                                                     feedback = "No barcode is registered for this step. Use the recovery route below, then register one in Routines."
                                                     AppRepository.logReliability(alarm.id, "Barcode step has no registered code")
                                                 }
-                                                BarcodeIdentity.matches(step.barcodeValue, barcode) -> {
+                                                acceptedCodes.any { BarcodeIdentity.matches(it, barcode) } -> {
                                                     feedback = "Barcode accepted"
                                                     pauseAudio()
                                                     completeStep(successAttempts = attempts, correct = 0)

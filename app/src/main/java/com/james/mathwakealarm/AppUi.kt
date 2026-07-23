@@ -42,6 +42,7 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
@@ -204,7 +205,7 @@ private fun HomeScreen(
 ) {
     val context = LocalContext.current
     val now = ZonedDateTime.now()
-    val next = appState.alarms.filter { it.enabled && it.days.isNotEmpty() }
+    val next = appState.alarms.filter { it.enabled }
         .minByOrNull { AlarmScheduler.nextOccurrence(it, now).toInstant() }
     val nextAt = next?.let { AlarmScheduler.nextOccurrence(it, now) }
     val lastRun = appState.runs.firstOrNull()
@@ -222,15 +223,15 @@ private fun HomeScreen(
             BrandHeader(compact = true)
         }
         Column {
-            Text("$greeting, ${appState.userName}", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+            Text("$greeting, ${appState.userName.ifBlank { "there" }}", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
             Text(
                 if (next == null) "Add an alarm to begin." else "Everything looks ready for your next alarm.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        if (lastRun != null && lastRun.completed && isToday(lastRun.completedAt)) {
-            CompletionCard(lastRun)
+        if (lastRun != null && lastRun.completed && isToday(lastRun.completedAt) && lastRun.id !in appState.dismissedRunIds) {
+            CompletionCard(lastRun, onDismiss = { AppRepository.dismissRun(lastRun.id) })
         }
 
         if (next != null && nextAt != null) {
@@ -238,10 +239,7 @@ private fun HomeScreen(
                 alarm = next,
                 nextAt = nextAt,
                 onEdit = { onEditAlarm(next.id) },
-                onTest = {
-                    AlarmScheduler.scheduleTest(context, next.id, 5_000L)
-                    Toast.makeText(context, "Test alarm scheduled in 5 seconds", Toast.LENGTH_SHORT).show()
-                }
+                onEditRoutine = onEditRoutine
             )
         } else {
             Card(shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
@@ -282,7 +280,7 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun CompletionCard(run: AlarmRun) {
+private fun CompletionCard(run: AlarmRun, onDismiss: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF8F0)),
         shape = RoundedCornerShape(22.dp),
@@ -292,6 +290,7 @@ private fun CompletionCard(run: AlarmRun) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("COMPLETED THIS MORNING", color = TazGreen, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
                 Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, contentDescription = "Dismiss summary", tint = TazGreen) }
             }
             Text(formatDuration(run.durationSeconds), fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = TazNavy)
             val questions = run.stepResults.sumOf { it.correctAnswers }
@@ -313,7 +312,7 @@ private fun CompletionLine(text: String) {
 }
 
 @Composable
-private fun NextAlarmCard(alarm: AlarmConfig, nextAt: ZonedDateTime, onEdit: () -> Unit, onTest: () -> Unit) {
+private fun NextAlarmCard(alarm: AlarmConfig, nextAt: ZonedDateTime, onEdit: () -> Unit, onEditRoutine: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Card(
@@ -337,7 +336,7 @@ private fun NextAlarmCard(alarm: AlarmConfig, nextAt: ZonedDateTime, onEdit: () 
             Text("${alarm.routine.size}-step routine • Approximately ${estimateRoutine(alarm.routine)} minutes")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit Alarm") }
-                Button(onClick = onTest, modifier = Modifier.weight(1f)) { Text("Test Alarm") }
+                Button(onClick = onEditRoutine, modifier = Modifier.weight(1f)) { Text("Edit Routine") }
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -558,7 +557,14 @@ private fun RoutinesScreen(appState: AppState, padding: PaddingValues) {
             onScan = {
                 GmsBarcodeScanning.getClient(context).startScan()
                     .addOnSuccessListener { barcode ->
-                        editingStep = editingStep?.copy(barcodeValue = BarcodeIdentity.capture(barcode), title = "Scan Barcode")
+                        val captured = BarcodeIdentity.capture(barcode)
+                        editingStep = editingStep?.let { current ->
+                            current.copy(
+                                barcodeValue = captured,
+                                barcodeValues = (current.savedBarcodeValues() + captured).distinct(),
+                                title = "Scan Barcode"
+                            )
+                        }
                     }
                     .addOnFailureListener { Toast.makeText(context, "Scanner could not start", Toast.LENGTH_SHORT).show() }
             },
@@ -726,13 +732,20 @@ private fun StepEditorDialog(
                         }
                     }
                     StepType.BARCODE -> {
+                        val savedBarcodes = step.savedBarcodeValues()
                         Text("Scan Barcode", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(if (step.barcodeValue.isBlank()) "No barcode registered" else "Barcode registered", color = if (step.barcodeValue.isBlank()) TazAmber else TazGreen)
+                        Text(
+                            if (savedBarcodes.isEmpty()) "No barcodes registered" else "${savedBarcodes.size} accepted barcode${if (savedBarcodes.size == 1) "" else "s"}",
+                            color = if (savedBarcodes.isEmpty()) TazAmber else TazGreen
+                        )
+                        savedBarcodes.forEachIndexed { index, _ ->
+                            Text("Barcode ${index + 1} saved", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         OutlinedButton(onClick = onScan, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Outlined.QrCodeScanner, null)
-                            Text(if (step.barcodeValue.isBlank()) " Register Barcode" else " Replace Barcode")
+                            Text(if (savedBarcodes.isEmpty()) " Add Barcode" else " Add Another Barcode")
                         }
-                        Text("During the alarm the screen will say ‘Scan Barcode’, ‘Barcode must match your saved code’ and ‘Open Scanner’.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Any one saved barcode can complete this step when the alarm goes off.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     StepType.PHOTO -> {
                         Text("${step.referenceUris.size} reference photos", color = if (step.referenceUris.size >= 3) TazGreen else TazAmber)
@@ -943,7 +956,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZALARM v2.1.2", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.0", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -995,11 +1008,13 @@ private fun stepIcon(type: StepType): ImageVector = when (type) {
 }
 
 
+private fun RoutineStep.savedBarcodeValues(): List<String> = (barcodeValues + listOf(barcodeValue)).filter { it.isNotBlank() }.distinct()
+
 private fun preserveRoutineRegistrations(
     existing: List<RoutineStep>,
     preset: List<RoutineStep>
 ): List<RoutineStep> {
-    val barcodes = existing.filter { it.type == StepType.BARCODE && it.barcodeValue.isNotBlank() }
+    val barcodes = existing.filter { it.type == StepType.BARCODE && it.savedBarcodeValues().isNotEmpty() }
     val photos = existing.filter { it.type == StepType.PHOTO && it.referenceUris.isNotEmpty() }
     var barcodeIndex = 0
     var photoIndex = 0
@@ -1008,7 +1023,7 @@ private fun preserveRoutineRegistrations(
         when (step.type) {
             StepType.BARCODE -> {
                 val configured = barcodes.getOrNull(barcodeIndex++) ?: barcodes.firstOrNull()
-                if (configured == null) step else step.copy(barcodeValue = configured.barcodeValue)
+                if (configured == null) step else step.copy(barcodeValue = configured.barcodeValue, barcodeValues = configured.savedBarcodeValues())
             }
             StepType.PHOTO -> {
                 val configured = photos.getOrNull(photoIndex++) ?: photos.firstOrNull()
@@ -1024,13 +1039,13 @@ private fun preserveRoutineRegistrations(
 
 private fun stepReady(step: RoutineStep): Boolean = when (step.type) {
     StepType.QUESTIONS -> step.questionsRequired > 0 && step.topics.isNotEmpty()
-    StepType.BARCODE -> step.barcodeValue.isNotBlank()
+    StepType.BARCODE -> step.savedBarcodeValues().isNotEmpty()
     StepType.PHOTO -> step.referenceUris.size >= 3
 }
 
 private fun stepStatus(step: RoutineStep): String = when (step.type) {
     StepType.QUESTIONS -> "${step.questionsRequired} correct • ${step.topics.joinToString { it.displayName }}"
-    StepType.BARCODE -> if (step.barcodeValue.isBlank()) "Barcode not registered" else "Barcode registered • Ready"
+    StepType.BARCODE -> if (step.savedBarcodeValues().isEmpty()) "No barcodes registered" else "${step.savedBarcodeValues().size} accepted barcode${if (step.savedBarcodeValues().size == 1) "" else "s"} • Ready"
     StepType.PHOTO -> "${step.referenceUris.size} reference photos${if (step.referenceUris.size >= 3) " • Ready" else ""}"
 }
 

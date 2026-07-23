@@ -1,55 +1,15 @@
-# TAZALARM v2.1.0 implemented scope
+TAZLARM v2.2.0 implemented scope
 
-## Identity and design
-
-- App renamed TAZALARM.
-- Universal sneezing-cat monoline Compose logo and launcher icon.
-- Selected sleek professional light/dark interface.
-- Generic barcode language with all location-specific Kitchen wording removed from application source.
-
-## Setup and alarm management
-
-- Four-stage first-run wizard.
-- Name and personalised greeting.
-- Multiple alarms can be queued before finishing onboarding.
-- Recurring days, time and label for each alarm.
-- Barcode and reference-photo setup.
-- Independent alarms, duplicate, skip next, delete and test controls.
-
-## Routine builder
-
-- Questions / Barcode / Photo step types.
-- Add, edit, reorder, duplicate and delete.
-- Question counts and selectable topics.
-- Barcode registration through Google Code Scanner.
-- 3–5 live reference photos.
-- Four routine presets.
-
-## Alarm experience
-
-- One-minute procedural sunrise horizon.
-- Per-window brightness ramp.
-- Gradual alarm volume every ten seconds.
-- Lock-screen full-screen activity.
-- Question skip without credit.
-- Generic barcode scan.
-- Photo similarity verification.
-- 50-correct penalty route.
-- Progress display and persistent results.
-
-## Reliability
-
-- Direct exact alarm → foreground service.
-- Ten-second exact backup broadcast.
-- Wake lock, looping audio, vibration and sticky service.
-- Active-alarm recovery.
-- Reboot/time/timezone/update rescheduling.
-- Reliability event log and two-minute screen-off test.
-
-
-## v2.1.3 Home refinement
-
-- Centred Home logo using the selected full sneezing-cat TAZALARM artwork.
-- Removed the redundant top-right Settings shortcut.
-- Retained Settings in the bottom navigation.
-- Explicitly excluded any Stay Awake follow-up challenge.
+Key updates in this build:
+- Rebranded visible in-app naming from TAZALARM to TAZLARM.
+- Reworked brand header to render the cat mark with a TAZLARM wordmark across screens.
+- First-run onboarding now starts with a blank name field.
+- First alarm setup now uses a clock picker instead of manual hour/minute typing.
+- Repeat days now default to none; leaving days blank creates a one-time alarm.
+- Onboarding routine builder now starts empty and lets the user add steps from scratch.
+- Routine barcode steps now support multiple saved barcodes; any one can satisfy the live alarm step.
+- Home completion summary now includes a dismiss X button.
+- Home next-alarm card now offers Edit Alarm and Edit Routine instead of Test Alarm.
+- Added Dance Moms and Teen Mom 2 trivia topic banks.
+- Maths question generation was softened so addition/subtraction operands stay within two digits.
+- Updated app version to 2.2.0.

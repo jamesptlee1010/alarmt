@@ -1,8 +1,6 @@
 package com.james.mathwakealarm
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,20 +11,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.QuestionMark
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,12 +48,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @Composable
 fun OnboardingScreen(appState: AppState) {
@@ -59,37 +58,39 @@ fun OnboardingScreen(appState: AppState) {
     var page by remember { mutableIntStateOf(0) }
     var name by remember { mutableStateOf(appState.userName) }
     var alarmLabel by remember { mutableStateOf("Weekday Alarm") }
-    var hourText by remember { mutableStateOf("6") }
-    var minuteText by remember { mutableStateOf("30") }
-    var days by remember { mutableStateOf(listOf(1, 2, 3, 4, 5)) }
+    var selectedHour by remember { mutableIntStateOf(6) }
+    var selectedMinute by remember { mutableIntStateOf(30) }
+    var days by remember { mutableStateOf(emptyList<Int>()) }
     var queuedAlarms by remember { mutableStateOf(emptyList<AlarmConfig>()) }
-    var barcode by remember { mutableStateOf("") }
-    var referenceUris by remember { mutableStateOf(emptyList<String>()) }
-    var pendingUri by remember { mutableStateOf<Uri?>(null) }
-    var message by remember { mutableStateOf("") }
+    var routineSteps by remember { mutableStateOf(emptyList<RoutineStep>()) }
+    var addStepMenu by remember { mutableStateOf(false) }
 
-    val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            pendingUri?.let { referenceUris = (referenceUris + it.toString()).distinct().take(5) }
-            message = "Reference photo added"
-        }
+    fun formatPickedTime(hour: Int, minute: Int): String {
+        val amPm = if (hour < 12) "am" else "pm"
+        val displayHour = when (val h = hour % 12) { 0 -> 12; else -> h }
+        return "$displayHour:${minute.toString().padStart(2, '0')} $amPm"
     }
 
-    fun scanBarcode() {
-        GmsBarcodeScanning.getClient(context).startScan()
-            .addOnSuccessListener { result ->
-                barcode = BarcodeIdentity.capture(result)
-                message = if (barcode.isBlank()) "No barcode value detected" else "Barcode registered"
-            }
-            .addOnFailureListener { message = it.localizedMessage ?: "Scanner could not start" }
-    }
-
-    fun draftAlarm(): AlarmConfig = defaultAlarm().copy(
+    fun draftAlarm(): AlarmConfig = AlarmConfig(
         label = alarmLabel.ifBlank { "Alarm" },
-        hour = hourText.toIntOrNull()?.coerceIn(0, 23) ?: 6,
-        minute = minuteText.toIntOrNull()?.coerceIn(0, 59) ?: 30,
-        days = days.ifEmpty { listOf(1, 2, 3, 4, 5) }
+        hour = selectedHour,
+        minute = selectedMinute,
+        days = days,
+        routine = routineSteps
     )
+
+    val timePicker = remember(selectedHour, selectedMinute) {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                selectedHour = hourOfDay
+                selectedMinute = minute
+            },
+            selectedHour,
+            selectedMinute,
+            false
+        )
+    }
 
     Scaffold { padding ->
         Box(
@@ -120,9 +121,9 @@ fun OnboardingScreen(appState: AppState) {
 
                 when (page) {
                     0 -> {
-                        Icon(Icons.Outlined.Alarm, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Outlined.Alarm, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(16.dp))
-                        Text("Welcome to TAZALARM", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("Welcome to TAZLARM", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
                             "A sunrise alarm that makes sure you are genuinely awake.",
                             modifier = Modifier.padding(top = 8.dp),
@@ -134,6 +135,7 @@ fun OnboardingScreen(appState: AppState) {
                             onValueChange = { name = it },
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Your name") },
+                            placeholder = { Text("Enter your name") },
                             supportingText = { Text("Used in your morning, afternoon or evening greeting") },
                             singleLine = true
                         )
@@ -141,7 +143,7 @@ fun OnboardingScreen(appState: AppState) {
                     1 -> {
                         Text("Create your first alarm", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            "You can add as many independent alarms as you need after setup.",
+                            "Choose a time, then optionally select repeat days. If no days are selected, the alarm will run once.",
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -157,37 +159,31 @@ fun OnboardingScreen(appState: AppState) {
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
-                        Spacer(Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(
-                                value = hourText,
-                                onValueChange = { hourText = it.filter(Char::isDigit).take(2) },
-                                label = { Text("Hour") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = minuteText,
-                                onValueChange = { minuteText = it.filter(Char::isDigit).take(2) },
-                                label = { Text("Minute") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f)
-                            )
+                        Spacer(Modifier.height(16.dp))
+                        OutlinedButton(onClick = { timePicker.updateTime(selectedHour, selectedMinute); timePicker.show() }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Outlined.Alarm, null)
+                            Text(" Pick time: ${formatPickedTime(selectedHour, selectedMinute)}")
                         }
                         Spacer(Modifier.height(20.dp))
                         Text("Repeat on", modifier = Modifier.fillMaxWidth(), fontWeight = FontWeight.Bold)
                         DayChipRows(days) { day ->
                             days = if (day in days) days - day else (days + day).sorted()
                         }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            if (days.isEmpty()) "No repeat days selected — alarm will run once."
+                            else "Repeats on ${daysLabel(days)}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Spacer(Modifier.height(12.dp))
                         OutlinedButton(
                             onClick = {
                                 queuedAlarms = queuedAlarms + draftAlarm()
-                                alarmLabel = "Alarm ${queuedAlarms.size + 1}"
-                                hourText = "7"
-                                minuteText = "00"
+                                alarmLabel = "Alarm ${queuedAlarms.size + 2}"
+                                selectedHour = 7
+                                selectedMinute = 0
+                                days = emptyList()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -198,41 +194,101 @@ fun OnboardingScreen(appState: AppState) {
                     2 -> {
                         Text("Prepare your routine", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            "The default routine uses questions, a barcode, more questions and a live photo.",
+                            "Start with a blank routine. Add the steps you want to complete before the alarm stops.",
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(20.dp))
-                        SetupCard(
-                            icon = Icons.Outlined.QrCodeScanner,
-                            title = "Scan Barcode",
-                            subtitle = if (barcode.isBlank()) "Not registered yet" else "Barcode registered",
-                            ready = barcode.isNotBlank(),
-                            button = if (barcode.isBlank()) "Register Barcode" else "Replace Barcode",
-                            onClick = ::scanBarcode
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        SetupCard(
-                            icon = Icons.Outlined.CameraAlt,
-                            title = "Verify Photo",
-                            subtitle = "${referenceUris.size} of 5 reference photos added",
-                            ready = referenceUris.size >= 3,
-                            button = "Add Reference Photo",
-                            onClick = {
-                                pendingUri = PhotoStore.createCaptureUri(context, "onboarding")
-                                pendingUri?.let { photoLauncher.launch(it) }
+                        if (routineSteps.isEmpty()) {
+                            Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Outlined.QuestionMark, null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(10.dp))
+                                    Text("Your routine has no steps yet.", fontWeight = FontWeight.Bold)
+                                    Text("Tap Add Step to choose Questions, Scan Barcode, Verify Photo and more.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
-                        )
-                        if (message.isNotBlank()) {
-                            Text(message, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 12.dp))
+                        } else {
+                            routineSteps.forEachIndexed { index, step ->
+                                Card(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            when (step.type) {
+                                                StepType.QUESTIONS -> Icons.Outlined.QuestionMark
+                                                StepType.BARCODE -> Icons.Outlined.QrCodeScanner
+                                                StepType.PHOTO -> Icons.Outlined.CameraAlt
+                                            },
+                                            null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text("${index + 1}. ${step.title}", fontWeight = FontWeight.Bold)
+                                            Text(
+                                                when (step.type) {
+                                                    StepType.QUESTIONS -> "${step.questionsRequired} correct • ${step.topics.joinToString { it.displayName }}"
+                                                    StepType.BARCODE -> "Configure one or more accepted barcodes in Routines"
+                                                    StepType.PHOTO -> "Configure reference photos in Routines"
+                                                },
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                        IconButton(onClick = { routineSteps = routineSteps.filterNot { it.id == step.id } }) {
+                                            Icon(Icons.Outlined.Delete, null)
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(10.dp))
+                            }
+                        }
+                        Box(Modifier.fillMaxWidth()) {
+                            Button(onClick = { addStepMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Outlined.Add, null)
+                                Text(" Add Step")
+                            }
+                            DropdownMenu(expanded = addStepMenu, onDismissRequest = { addStepMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Questions") },
+                                    leadingIcon = { Icon(Icons.Outlined.QuestionMark, null) },
+                                    onClick = {
+                                        routineSteps = routineSteps + RoutineStep(
+                                            type = StepType.QUESTIONS,
+                                            title = "Answer Questions",
+                                            questionsRequired = 2,
+                                            topics = listOf(Topic.MATHS)
+                                        )
+                                        addStepMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Scan Barcode") },
+                                    leadingIcon = { Icon(Icons.Outlined.QrCodeScanner, null) },
+                                    onClick = {
+                                        routineSteps = routineSteps + RoutineStep(type = StepType.BARCODE, title = "Scan Barcode")
+                                        addStepMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Verify Photo") },
+                                    leadingIcon = { Icon(Icons.Outlined.CameraAlt, null) },
+                                    onClick = {
+                                        routineSteps = routineSteps + RoutineStep(type = StepType.PHOTO, title = "Verify Photo")
+                                        addStepMenu = false
+                                    }
+                                )
+                            }
                         }
                     }
                     else -> {
-                        Icon(Icons.Outlined.CheckCircle, null, Modifier.size(58.dp), tint = TazGreen)
+                        Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen)
                         Spacer(Modifier.height(14.dp))
                         Text("Everything is ready", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            "TAZALARM will use a one-minute sunrise, rising alarm volume and your configured routine.",
+                            "TAZLARM will use a one-minute sunrise, rising alarm volume and your configured routine.",
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -243,13 +299,12 @@ fun OnboardingScreen(appState: AppState) {
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("${queuedAlarms.size + 1} alarm${if (queuedAlarms.isEmpty()) "" else "s"}", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
-                                (queuedAlarms + draftAlarm()).forEach { alarm ->
-                                    Text("${alarm.label}: ${alarm.hour.toString().padStart(2, '0')}:${alarm.minute.toString().padStart(2, '0')} • ${daysLabel(alarm.days)}", fontWeight = FontWeight.SemiBold)
+                                val alarms = queuedAlarms + draftAlarm()
+                                Text("${alarms.size} alarm${if (alarms.size == 1) "" else "s"}", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+                                alarms.forEach { alarm ->
+                                    Text("${alarm.label}: ${formatPickedTime(alarm.hour, alarm.minute)} • ${daysLabel(alarm.days)}", fontWeight = FontWeight.SemiBold)
                                 }
-                                Text("Each starts with the same 4-step routine, which can be customised independently later.")
-                                Text(if (barcode.isBlank()) "Barcode: configure later" else "Barcode: ready")
-                                Text("Photo references: ${referenceUris.size}")
+                                Text(if (routineSteps.isEmpty()) "No routine steps added" else "${routineSteps.size} routine step${if (routineSteps.size == 1) "" else "s"} added")
                             }
                         }
                     }
@@ -269,21 +324,14 @@ fun OnboardingScreen(appState: AppState) {
                             if (page < 3) {
                                 page++
                             } else {
-                                val configured = defaultRoutine().map { step ->
-                                    when (step.type) {
-                                        StepType.BARCODE -> step.copy(barcodeValue = barcode)
-                                        StepType.PHOTO -> step.copy(referenceUris = referenceUris)
-                                        else -> step
-                                    }
-                                }
-                                val alarms = (queuedAlarms + draftAlarm()).map { it.copy(routine = configured) }
+                                val alarms = (queuedAlarms + draftAlarm())
                                 AppRepository.completeOnboarding(name, alarms)
                                 AlarmScheduler.scheduleAll(context)
                             }
                         },
                         enabled = when (page) {
                             0 -> name.isNotBlank()
-                            1 -> days.isNotEmpty()
+                            2 -> routineSteps.isNotEmpty()
                             else -> true
                         },
                         modifier = Modifier.weight(1f)
@@ -324,38 +372,13 @@ private fun DayChipRows(selected: List<Int>, onToggle: (Int) -> Unit) {
     }
 }
 
-@Composable
-private fun SetupCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    ready: Boolean,
-    button: String,
-    onClick: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-        Column(Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(subtitle, color = if (ready) TazGreen else MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (ready) Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen)
-            }
-            Spacer(Modifier.height(14.dp))
-            OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(button) }
-        }
-    }
-}
-
 fun daysLabel(days: List<Int>): String {
     val sorted = days.distinct().sorted()
-    return when (sorted) {
-        listOf(1, 2, 3, 4, 5) -> "Mon–Fri"
-        listOf(6, 7) -> "Weekend"
-        listOf(1, 2, 3, 4, 5, 6, 7) -> "Every day"
+    return when {
+        sorted.isEmpty() -> "Runs once"
+        sorted == listOf(1, 2, 3, 4, 5) -> "Mon–Fri"
+        sorted == listOf(6, 7) -> "Weekend"
+        sorted == listOf(1, 2, 3, 4, 5, 6, 7) -> "Every day"
         else -> sorted.joinToString(" · ") { listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")[it - 1] }
     }
 }

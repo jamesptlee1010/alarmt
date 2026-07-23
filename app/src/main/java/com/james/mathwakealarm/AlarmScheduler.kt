@@ -22,7 +22,7 @@ object AlarmScheduler {
 
     fun schedule(context: Context, alarm: AlarmConfig) {
         cancel(context, alarm.id)
-        if (!alarm.enabled || alarm.days.isEmpty()) return
+        if (!alarm.enabled) return
         val next = nextOccurrence(alarm)
         val manager = context.getSystemService(AlarmManager::class.java)
         val primary = primaryPendingIntent(context, alarm.id)
@@ -58,6 +58,12 @@ object AlarmScheduler {
             .withHour(alarm.hour.coerceIn(0, 23))
             .withMinute(alarm.minute.coerceIn(0, 59))
         if (!candidate.isAfter(now)) candidate = candidate.plusDays(1)
+
+        if (validDays.isEmpty()) {
+            val millis = candidate.toInstant().toEpochMilli()
+            val isSkipped = alarm.skipOccurrenceAt > 0L && kotlin.math.abs(millis - alarm.skipOccurrenceAt) < 60_000L
+            return if (isSkipped) candidate.plusDays(1) else candidate
+        }
 
         repeat(15) {
             if (candidate.dayOfWeek in validDays) {

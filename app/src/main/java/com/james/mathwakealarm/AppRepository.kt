@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 
 object AppRepository {
-    private const val PREFS = "tazalarm_state_v210"
+    private const val PREFS = "tazalarm_state_v220"
     private const val STATE_KEY = "app_state"
     private const val ACTIVE_ALARM_KEY = "active_alarm_id"
     private const val ACTIVE_STARTED_KEY = "active_alarm_started"
@@ -40,17 +40,15 @@ object AppRepository {
         prefs().edit().putString(STATE_KEY, json.encodeToString(next)).apply()
     }
 
-    fun completeOnboarding(name: String, firstAlarm: AlarmConfig) = completeOnboarding(name, listOf(firstAlarm))
-
     fun completeOnboarding(name: String, alarms: List<AlarmConfig>) = update { current ->
         current.copy(
-            userName = name.trim().ifBlank { "James" },
+            userName = name.trim(),
             onboardingComplete = true,
             alarms = alarms.ifEmpty { listOf(defaultAlarm()) }
         )
     }
 
-    fun setName(name: String) = update { it.copy(userName = name.trim().ifBlank { "James" }) }
+    fun setName(name: String) = update { it.copy(userName = name.trim()) }
 
     fun setTheme(theme: ThemeMode) = update { it.copy(themeMode = theme) }
 
@@ -67,13 +65,12 @@ object AppRepository {
     }
 
     fun addAlarm(copyFrom: AlarmConfig? = null): AlarmConfig {
-        // A brand-new alarm starts from the first configured alarm so registered
-        // barcode and photo steps are not silently lost. It remains fully editable.
-        val template = copyFrom ?: mutableState.value.alarms.firstOrNull() ?: defaultAlarm()
+        val template = copyFrom ?: AlarmConfig(label = "New Alarm", routine = emptyList(), days = emptyList())
         val created = template.copy(
             id = UUID.randomUUID().toString(),
             label = if (copyFrom == null) "New Alarm" else "${copyFrom.label} Copy",
-            skipOccurrenceAt = 0L
+            skipOccurrenceAt = 0L,
+            enabled = false
         )
         upsertAlarm(created)
         return created
@@ -98,7 +95,18 @@ object AppRepository {
     fun clearSkipOccurrence(id: String) = setSkipOccurrence(id, 0L)
 
     fun saveRun(run: AlarmRun) = update { current ->
-        current.copy(runs = (listOf(run) + current.runs).take(180))
+        current.copy(
+            runs = (listOf(run) + current.runs).take(180),
+            dismissedRunIds = current.dismissedRunIds.filterNot { it == run.id }
+        )
+    }
+
+    fun dismissRun(runId: String) = update { current ->
+        current.copy(dismissedRunIds = (current.dismissedRunIds + runId).distinct().takeLast(180))
+    }
+
+    fun showRun(runId: String) = update { current ->
+        current.copy(dismissedRunIds = current.dismissedRunIds.filterNot { it == runId })
     }
 
     fun logReliability(alarmId: String, stage: String) = update { current ->

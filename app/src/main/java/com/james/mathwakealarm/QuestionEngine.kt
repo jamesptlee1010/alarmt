@@ -78,7 +78,49 @@ object QuestionEngine {
         Question("logic_02", Topic.LOGIC, "Complete the sequence: 1, 1, 2, 3, 5, ?", "8"),
         Question("logic_03", Topic.LOGIC, "If all cats are animals and Taz is a cat, is Taz an animal?", "Yes", listOf("Y")),
         Question("logic_04", Topic.LOGIC, "What comes next: A, C, E, G, ?", "I"),
-        Question("logic_05", Topic.LOGIC, "If yesterday was Monday, what day is tomorrow?", "Wednesday")
+        Question("logic_05", Topic.LOGIC, "If yesterday was Monday, what day is tomorrow?", "Wednesday"),
+
+        Question("dm_01", Topic.DANCE_MOMS, "Which dance teacher is at the centre of Dance Moms?", "Abby Lee Miller", listOf("Abby")),
+        Question("dm_02", Topic.DANCE_MOMS, "Which studio is most closely associated with the early seasons of Dance Moms?", "Abby Lee Dance Company", listOf("ALDC")),
+        Question("dm_03", Topic.DANCE_MOMS, "What is the first name of Chloe Lukasiak's mother?", "Christi"),
+        Question("dm_04", Topic.DANCE_MOMS, "What is the first name of Maddie Ziegler's sister?", "Mackenzie", listOf("Kenzie")),
+        Question("dm_05", Topic.DANCE_MOMS, "Which mom is the mother of Nia Sioux?", "Holly"),
+        Question("dm_06", Topic.DANCE_MOMS, "What is the surname of sisters Maddie and Mackenzie on Dance Moms?", "Ziegler"),
+        Question("dm_07", Topic.DANCE_MOMS, "Which dancer is the daughter of Kelly Hyland and often did acro?", "Brooke", listOf("Brooke Hyland")),
+        Question("dm_08", Topic.DANCE_MOMS, "Which Hyland sister was younger, Brooke or Paige?", "Paige"),
+        Question("dm_09", Topic.DANCE_MOMS, "What is the first name of JoJo Siwa's mother?", "Jessalynn", listOf("Jess")),
+        Question("dm_10", Topic.DANCE_MOMS, "Which city is ALDC most associated with in the early series?", "Pittsburgh"),
+        Question("dm_11", Topic.DANCE_MOMS, "Which dancer was known for being Abby's early favourite, Maddie or Nia?", "Maddie", listOf("Maddie Ziegler")),
+        Question("dm_12", Topic.DANCE_MOMS, "What is the first name of Kalani's mother?", "Kira"),
+        Question("dm_13", Topic.DANCE_MOMS, "Which dancer is the daughter of Jill Vertes?", "Kendall", listOf("Kendall Vertes")),
+        Question("dm_14", Topic.DANCE_MOMS, "What is the first name of Paige Hyland's mother?", "Kelly"),
+        Question("dm_15", Topic.DANCE_MOMS, "Which dancer is the daughter of Melissa Gisoni?", "Maddie", listOf("Maddie Ziegler", "Mackenzie", "Mackenzie Ziegler")),
+        Question("dm_16", Topic.DANCE_MOMS, "Which team colour often appeared in ALDC jackets: black, pink, or yellow?", "Black"),
+        Question("dm_17", Topic.DANCE_MOMS, "What is the first name of Chloe's mother?", "Christi"),
+        Question("dm_18", Topic.DANCE_MOMS, "Which dancer later became widely known for music and bows?", "JoJo Siwa", listOf("JoJo")),
+        Question("dm_19", Topic.DANCE_MOMS, "Which dancer is the daughter of Holly Frazier?", "Nia", listOf("Nia Sioux")),
+        Question("dm_20", Topic.DANCE_MOMS, "What does ALDC stand for?", "Abby Lee Dance Company", listOf("ALDC")),
+
+        Question("tm2_01", Topic.TEEN_MOM_2, "Which Teen Mom 2 cast member is the mother of Isaac?", "Kailyn", listOf("Kail", "Kailyn Lowry")),
+        Question("tm2_02", Topic.TEEN_MOM_2, "Which Teen Mom 2 cast member is the mother of Aubree?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_03", Topic.TEEN_MOM_2, "Which Teen Mom 2 cast member is the mother of Jace?", "Jenelle", listOf("Jenelle Evans")),
+        Question("tm2_04", Topic.TEEN_MOM_2, "Which Teen Mom 2 cast member is the mother of Leah and Ali?", "Leah", listOf("Leah Messer")),
+        Question("tm2_05", Topic.TEEN_MOM_2, "What is the first name of Chelsea's daughter, Aubree or Addie?", "Aubree"),
+        Question("tm2_06", Topic.TEEN_MOM_2, "Which cast member later married Cole DeBoer?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_07", Topic.TEEN_MOM_2, "Which cast member has twins named Ali and Aleeah?", "Leah", listOf("Leah Messer")),
+        Question("tm2_08", Topic.TEEN_MOM_2, "Which cast member is strongly associated with South Dakota?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_09", Topic.TEEN_MOM_2, "Which cast member is known for a long-running difficult relationship with Barbara?", "Jenelle", listOf("Jenelle Evans")),
+        Question("tm2_10", Topic.TEEN_MOM_2, "What is the first name of Jenelle's mother?", "Barbara", listOf("Barb")),
+        Question("tm2_11", Topic.TEEN_MOM_2, "Which cast member has sons including Lincoln?", "Kailyn", listOf("Kail", "Kailyn Lowry")),
+        Question("tm2_12", Topic.TEEN_MOM_2, "Which cast member is linked with daughters named Addie, Ali, and Aleeah?", "Leah", listOf("Leah Messer")),
+        Question("tm2_13", Topic.TEEN_MOM_2, "Which Teen Mom 2 cast member left the series earlier than the others, Chelsea or Jenelle?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_14", Topic.TEEN_MOM_2, "Which cast member is the mother of Watson?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_15", Topic.TEEN_MOM_2, "Which cast member often discussed co-parenting with Jo in early seasons?", "Kailyn", listOf("Kail", "Kailyn Lowry")),
+        Question("tm2_16", Topic.TEEN_MOM_2, "Which cast member is the mother of Kaiser?", "Jenelle", listOf("Jenelle Evans")),
+        Question("tm2_17", Topic.TEEN_MOM_2, "What network aired Teen Mom 2?", "MTV"),
+        Question("tm2_18", Topic.TEEN_MOM_2, "Which cast member later married Jeremy Calvert?", "Leah", listOf("Leah Messer")),
+        Question("tm2_19", Topic.TEEN_MOM_2, "Which cast member is associated with the surname Houska?", "Chelsea", listOf("Chelsea Houska")),
+        Question("tm2_20", Topic.TEEN_MOM_2, "Which cast member is associated with the surname Lowry?", "Kailyn", listOf("Kail", "Kailyn Lowry"))
     )
 
     fun next(topics: List<Topic>, recentIds: Collection<String> = emptyList()): Question {
@@ -109,23 +151,23 @@ object QuestionEngine {
     private fun mathsQuestion(): Question {
         return when (Random.nextInt(4)) {
             0 -> {
-                val a = Random.nextInt(12, 100)
-                val b = Random.nextInt(7, 80)
+                val a = Random.nextInt(0, 100)
+                val b = Random.nextInt(0, 100)
                 Question("math_${System.nanoTime()}", Topic.MATHS, "$a + $b = ?", (a + b).toString())
             }
             1 -> {
-                val a = Random.nextInt(30, 120)
-                val b = Random.nextInt(5, a)
+                val a = Random.nextInt(0, 100)
+                val b = Random.nextInt(0, a + 1)
                 Question("math_${System.nanoTime()}", Topic.MATHS, "$a − $b = ?", (a - b).toString())
             }
             2 -> {
-                val a = Random.nextInt(4, 13)
-                val b = Random.nextInt(4, 13)
+                val a = Random.nextInt(2, 13)
+                val b = Random.nextInt(2, 13)
                 Question("math_${System.nanoTime()}", Topic.MATHS, "$a × $b = ?", (a * b).toString())
             }
             else -> {
-                val divisor = Random.nextInt(3, 13)
-                val quotient = Random.nextInt(4, 16)
+                val divisor = Random.nextInt(2, 13)
+                val quotient = Random.nextInt(2, 13)
                 val dividend = divisor * quotient
                 Question("math_${System.nanoTime()}", Topic.MATHS, "$dividend ÷ $divisor = ?", quotient.toString())
             }

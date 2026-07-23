@@ -103,7 +103,7 @@ class AlarmService : Service() {
 
     private fun buildNotification(alarm: AlarmConfig) = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setContentTitle("TAZALARM — ${alarm.label}")
+        .setContentTitle("TAZLARM — ${alarm.label}")
         .setContentText("Complete your wake-up routine to stop the alarm.")
         .setCategory(NotificationCompat.CATEGORY_ALARM)
         .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -147,7 +147,7 @@ class AlarmService : Service() {
         if (wakeLock?.isHeld == true) return
         wakeLock = getSystemService<PowerManager>()?.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "TAZALARM:ActiveAlarm"
+            "TAZLARM:ActiveAlarm"
         )?.apply { acquire(20 * 60 * 1000L) }
     }
 
