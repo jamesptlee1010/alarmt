@@ -1,0 +1,153 @@
+name: Build TAZALARM APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Locate Android project
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          find_project_root() {
+            find "$GITHUB_WORKSPACE" \
+              -path "$GITHUB_WORKSPACE/.git" -prune -o \
+              -maxdepth 6 -type f \
+              \( -name settings.gradle -o -name settings.gradle.kts -o -name settings.gradle.dcl \) \
+              -printf '%h\n' \
+              | awk '{ print length, $0 }' \
+              | sort -n \
+              | cut -d' ' -f2- \
+              | head -n 1
+          }
+
+          PROJECT_DIR="$(find_project_root || true)"
+
+          # Some GitHub uploads contain the distributable ZIP rather than its
+          # extracted project files. Extract it automatically and try again.
+          if [[ -z "$PROJECT_DIR" ]]; then
+            ZIP_FILE="$(find "$GITHUB_WORKSPACE" -maxdepth 3 -type f \
+              \( -iname 'TAZALARM*.zip' -o -iname '*GitHub_upload*.zip' \) \
+              | head -n 1 || true)"
+
+            if [[ -n "$ZIP_FILE" ]]; then
+              echo "No Gradle settings file found. Extracting: $ZIP_FILE"
+              mkdir -p "$RUNNER_TEMP/tazalarm-project"
+              unzip -q -o "$ZIP_FILE" -d "$RUNNER_TEMP/tazalarm-project"
+
+              PROJECT_DIR="$(find "$RUNNER_TEMP/tazalarm-project" \
+                -maxdepth 6 -type f \
+                \( -name settings.gradle -o -name settings.gradle.kts -o -name settings.gradle.dcl \) \
+                -printf '%h\n' \
+                | awk '{ print length, $0 }' \
+                | sort -n \
+                | cut -d' ' -f2- \
+                | head -n 1 || true)"
+            fi
+          fi
+
+          if [[ -z "$PROJECT_DIR" ]]; then
+            echo "::error::No Gradle project was found. Upload the extracted project files so settings.gradle.kts and the app folder are present, or commit the supplied TAZALARM ZIP."
+            echo "Repository contents:"
+            find "$GITHUB_WORKSPACE" -maxdepth 4 -mindepth 1 -not -path '*/.git/*' -print | sort
+            exit 1
+          fi
+
+          test -f "$PROJECT_DIR/settings.gradle" \
+            || test -f "$PROJECT_DIR/settings.gradle.kts" \
+            || test -f "$PROJECT_DIR/settings.gradle.dcl"
+          test -f "$PROJECT_DIR/app/build.gradle" \
+            || test -f "$PROJECT_DIR/app/build.gradle.kts"
+
+          echo "Gradle project located at: $PROJECT_DIR"
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Show selected project
+        shell: bash
+        run: |
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          echo "Building from $PROJECT_DIR"
+          ls -la "$PROJECT_DIR"
+
+      - name: Run package validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          if [[ -f "$PROJECT_DIR/tools/validate_package.py" ]]; then
+            python3 "$PROJECT_DIR/tools/validate_package.py" "$PROJECT_DIR"
+          else
+            echo "No optional package validator found; continuing."
+          fi
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          gradle --no-daemon -p "$PROJECT_DIR" :app:testReleaseUnitTest
+
+      - name: Build signed release APK
+        shell: bash
+        run: |
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          gradle --no-daemon -p "$PROJECT_DIR" clean :app:assembleRelease
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          APK="$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner"
+          test -x "$APKSIGNER"
+          test -f "$APK"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+
+      - name: Prepare installable APK
+        shell: bash
+        run: |
+          PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
+          cp "$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" \
+            "$GITHUB_WORKSPACE/TAZALARM-v2.1.0.apk"
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAZALARM-v2.1.0-installable-APK
+          path: TAZALARM-v2.1.0.apk
+          if-no-files-found: error
+          retention-days: 30
