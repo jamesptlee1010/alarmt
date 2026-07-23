@@ -1,4 +1,4 @@
-name: Build TAZALARM APK
+name: Build TAZLARM APK
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
           # extracted project files. Extract it automatically and try again.
           if [[ -z "$PROJECT_DIR" ]]; then
             ZIP_FILE="$(find "$GITHUB_WORKSPACE" -maxdepth 3 -type f \
-              \( -iname 'TAZALARM*.zip' -o -iname '*GitHub_upload*.zip' \) \
+              \( -iname 'TAZLARM*.zip' -o -iname 'TAZALARM*.zip' -o -iname '*GitHub_upload*.zip' \) \
               | head -n 1 || true)"
 
             if [[ -n "$ZIP_FILE" ]]; then
@@ -61,7 +61,7 @@ jobs:
           fi
 
           if [[ -z "$PROJECT_DIR" ]]; then
-            echo "::error::No Gradle project was found. Upload the extracted project files so settings.gradle.kts and the app folder are present, or commit the supplied TAZALARM ZIP."
+            echo "::error::No Gradle project was found. Upload the extracted project files so settings.gradle.kts and the app folder are present, or commit the supplied TAZLARM ZIP."
             echo "Repository contents:"
             find "$GITHUB_WORKSPACE" -maxdepth 4 -mindepth 1 -not -path '*/.git/*' -print | sort
             exit 1
@@ -142,12 +142,12 @@ jobs:
         run: |
           PROJECT_DIR="${{ steps.locate.outputs.project_dir }}"
           cp "$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" \
-            "$GITHUB_WORKSPACE/TAZALARM-v2.1.3.apk"
+            "$GITHUB_WORKSPACE/TAZLARM-v2.2.0.apk"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: TAZALARM-v2.1.3-installable-APK
-          path: TAZALARM-v2.1.3.apk
+          name: TAZLARM-v2.2.0-installable-APK
+          path: TAZLARM-v2.2.0.apk
           if-no-files-found: error
           retention-days: 30

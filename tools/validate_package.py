@@ -54,8 +54,8 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.1.3 / 213", 'versionCode = 213' in build and 'versionName = "2.1.3"' in build)
-check("TAZALARM app label", '<string name="app_name">TAZALARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
+check("Version 2.2.0 / 220", 'versionCode = 220' in build and 'versionName = "2.2.0"' in build)
+check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
 check("Full-screen alarm permission", "android.permission.USE_FULL_SCREEN_INTENT" in manifest)
 check("Direct foreground-service PendingIntent", "PendingIntent.getForegroundService" in scheduler)
@@ -70,14 +70,14 @@ check("Reboot/time/update rescheduling", all(x in manifest for x in ["BOOT_COMPL
 check("One-minute sunrise default", "sunriseSeconds: Int = 60" in main_source and "sunriseDuration" in alarm_ui)
 check("Per-window brightness ramp", "screenBrightness" in alarm_ui)
 check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "red", "orange", "daylight", "SunriseHorizon"]))
-check("Exact supplied logo used universally", "R.drawable.tazalarm_logo_full" in main_source and "R.drawable.tazalarm_cat_only" in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_logo_full.png").is_file())
+check("Selected sneezing-cat branding used universally", "R.drawable.tazalarm_cat_only" in main_source and 'Text(\n            "TAZLARM"' in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_cat_only.png").is_file())
 check("Multiple alarms in onboarding", "queuedAlarms" in onboarding and "completeOnboarding(name, alarms)" in onboarding)
 check("Five main navigation areas", all(x in app_ui for x in ["HOME", "ALARMS", "ROUTINES", "PROGRESS", "SETTINGS"]))
 check("Home logo is centred", "contentAlignment = Alignment.Center" in app_ui and "BrandHeader(compact = true)" in app_ui)
 check("No duplicate Home settings shortcut", "onSettings" not in app_ui and 'Icon(Icons.Outlined.Settings, "Settings")' not in app_ui)
 check("Stay Awake feature excluded", re.search(r"stay\s*awake|still\s*awake", main_source, re.I) is None)
 check("Generic barcode title", 'Text("Scan Barcode"' in alarm_ui and 'title = "Scan Barcode"' in main_source)
-check("Generic barcode helper", "Barcode must match your saved code" in alarm_ui)
+check("Generic barcode helper", "Barcode must match one of your saved codes" in alarm_ui)
 check("Generic scanner action", "Open Scanner" in alarm_ui)
 check("No Kitchen wording in production source", re.search(r"\bkitchen\b", main_source, re.I) is None)
 check("Alarm answer text is black", all(x in alarm_ui for x in ["focusedTextColor = Color.Black", "unfocusedTextColor = Color.Black", "cursorColor = Color.Black", "focusedBorderColor = Color.Black"]))
@@ -116,7 +116,7 @@ except Exception as exc:
     check("Release keystore opens and alias exists", False, str(exc))
 
 passed = sum(ok for _, ok, _ in checks)
-print(f"TAZALARM package validation: {passed}/{len(checks)} checks passed")
+print(f"TAZLARM package validation: {passed}/{len(checks)} checks passed")
 for name, ok, detail in checks:
     marker = "PASS" if ok else "FAIL"
     print(f"[{marker}] {name}" + (f" — {detail}" if detail else ""))

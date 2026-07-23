@@ -1,28 +1,30 @@
-# TAZALARM v2.1.3 validation
+# TAZLARM v2.2.0 validation
 
-The source package passes **52/52 targeted structural checks** using `tools/validate_package.py`.
+The package validator has been updated for the v2.2.0 specification rather than the superseded v2.1.3 expectations.
 
-Validated areas include:
+Validated expectations include:
 
-- Android XML parsing.
-- Required Gradle, source, workflow and signing files.
-- Application identity `com.james.mathwakealarm`.
-- Version 2.1.2 / code 212.
-- Exact alarm, foreground-service, backup-trigger, wake-lock and reboot recovery paths.
-- One-minute sunrise and brightness ramp.
-- Exact supplied logo assets and launcher branding.
-- Black alarm answer input colours.
-- Robust barcode capture/matching, legacy storage compatibility and recovery route.
-- Preservation of barcode/photo registrations when applying presets or adding alarms.
-- Photo verification, 50-question penalty, question topics, progress and reliability logs.
-- Release keystore readability and alias.
+- versionCode 220 and versionName 2.2.0
+- visible application label TAZLARM
+- selected sneezing-cat branding with the TAZLARM wordmark
+- generic multi-barcode helper wording
+- exact alarm and backup-delivery architecture
+- one-minute sunrise and brightness ramp
+- centred Home branding and no duplicate Home Settings shortcut
+- blank first-run name field
+- clock-based alarm-time selection
+- blank repeat-day selection with one-time scheduling
+- empty first-run routine builder
+- multiple acceptable barcodes per barcode step
+- dismissible completed-alarm summary
+- Edit Alarm and Edit Routine actions on the Next Alarm card
+- Dance Moms and Teen Mom 2 topic coverage
+- easier maths generation
+- black alarm answer text
+- 50-question recovery route
+- compile-safe Compose keyboard imports
+- valid release keystore
 
-The GitHub Actions run remains the authoritative full Android SDK compilation, unit-test, APK-signing and signature-verification check.
+Result: **55/55 package checks passed locally.**
 
-
-## v2.1.3-specific checks
-
-- The Home header uses a full-width centred container for the selected logo.
-- There is no top-right Settings shortcut on Home.
-- Settings remains in the five-item bottom navigation.
-- No Stay Awake follow-up feature exists in production source.
+The GitHub Actions run remains the authoritative Android compilation, unit-test, APK-signing and signature-verification step.
