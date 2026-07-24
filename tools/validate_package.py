@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.9 / 229", 'versionCode = 229' in build and 'versionName = "2.2.9"' in build)
+check("Version 2.3.1 / 231", 'versionCode = 231' in build and 'versionName = "2.3.1"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -105,7 +105,35 @@ check(
     and app_ui.count("primaryContainer.copy(alpha = .72f)") >= 5,
 )
 check("Per-window brightness ramp", "screenBrightness" in alarm_ui)
-check("Night-to-day horizon renderer", all(x in alarm_ui for x in ["purple", "red", "orange", "daylight", "SunriseHorizon"]))
+check(
+    "Night-to-day scenic sunrise renderer",
+    all(x in alarm_ui for x in [
+        "SunriseLandscape",
+        "upperMid",
+        "lowerMid",
+        "horizon",
+        "distant mountains",
+        "lake / water",
+        "meadow foreground",
+    ]),
+)
+
+check(
+    "Dedicated Alarm Finished sunrise page",
+    all(x in alarm_ui for x in [
+        "completedRun",
+        "AlarmFinishedPane",
+        'Text("Alarm Finished!"',
+        'Text("View Summary"',
+        'Text("Back to Home"',
+        "finished = completedRun != null",
+    ]),
+)
+check(
+    "Live alarm branding is lowered slightly",
+    "Spacer(Modifier.height(10.dp))" in alarm_ui
+    and "modifier = Modifier.width(220.dp).height(64.dp)" in alarm_ui,
+)
 check("Selected sneezing-cat branding used universally", "R.drawable.tazalarm_cat_only" in main_source and 'Text(\n            "TAZLARM"' in main_source and (ROOT / "app/src/main/res/drawable-nodpi/tazalarm_cat_only.png").is_file())
 check("Multiple alarms in onboarding", "queuedAlarms" in onboarding and "completeOnboarding(name, alarms)" in onboarding)
 check("Five main navigation areas", all(x in app_ui for x in ["HOME", "ALARMS", "ROUTINES", "PROGRESS", "SETTINGS"]))
