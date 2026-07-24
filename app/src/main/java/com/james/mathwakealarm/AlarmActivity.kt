@@ -138,11 +138,13 @@ class AlarmActivity : ComponentActivity() {
                     setBrightness = { brightness ->
                         window.attributes = window.attributes.apply { screenBrightness = brightness.coerceIn(.05f, 1f) }
                     },
-                    onComplete = { run ->
+                    onRoutineSaved = { run ->
                         AppRepository.saveRun(run)
                         AppRepository.setTheme(ThemeMode.LIGHT)
                         AppRepository.logReliability(alarm.id, "Routine completed in ${run.durationSeconds} seconds")
                         startService(Intent(this, AlarmService::class.java).apply { action = AlarmService.ACTION_STOP })
+                    },
+                    onOpenHome = {
                         startActivity(Intent(this, MainActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             putExtra(MainActivity.EXTRA_POST_ALARM_FADE, true)
@@ -160,7 +162,8 @@ private fun AlarmChallengeScreen(
     alarm: AlarmConfig,
     startedAt: Long,
     setBrightness: (Float) -> Unit,
-    onComplete: (AlarmRun) -> Unit
+    onRoutineSaved: (AlarmRun) -> Unit,
+    onOpenHome: () -> Unit
 ) {
     val context = LocalContext.current
     val sunriseDuration = alarm.sunriseSeconds.coerceAtLeast(120) * 1000L
@@ -181,6 +184,7 @@ private fun AlarmChallengeScreen(
     val topicAttempted = remember { mutableStateMapOf<Topic, Int>() }
     var captureUri by remember { mutableStateOf<Uri?>(null) }
     var awaitingInitialSilence by remember { mutableStateOf(true) }
+    var completedRun by remember { mutableStateOf<AlarmRun?>(null) }
 
     val currentStep = if (penaltyMode) null else alarm.routine.getOrNull(stepIndex)
     val questionTarget = if (penaltyMode) 50 else currentStep?.questionsRequired ?: 0
@@ -204,17 +208,17 @@ private fun AlarmChallengeScreen(
     }
 
     fun completeRoutine() {
-        onComplete(
-            AlarmRun(
-                alarmId = alarm.id,
-                alarmLabel = alarm.label,
-                startedAt = startedAt,
-                completedAt = System.currentTimeMillis(),
-                completed = true,
-                penaltyRouteUsed = penaltyMode,
-                stepResults = results.toList()
-            )
+        val run = AlarmRun(
+            alarmId = alarm.id,
+            alarmLabel = alarm.label,
+            startedAt = startedAt,
+            completedAt = System.currentTimeMillis(),
+            completed = true,
+            penaltyRouteUsed = penaltyMode,
+            stepResults = results.toList()
         )
+        completedRun = run
+        onRoutineSaved(run)
     }
 
     fun completeStep(successAttempts: Int = attempts.coerceAtLeast(1), correct: Int = correctCount) {
@@ -329,7 +333,7 @@ private fun AlarmChallengeScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        SunriseHorizon(progress = sunriseProgress)
+        SunriseLandscape(progress = if (completedRun != null) 1f else sunriseProgress, finished = completedRun != null)
         Column(
             Modifier
                 .fillMaxSize()
@@ -339,12 +343,22 @@ private fun AlarmChallengeScreen(
                 .padding(horizontal = 18.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(10.dp))
             BrandMark(
                 modifier = Modifier.width(220.dp).height(64.dp),
                 color = Color.White,
                 fullLogo = true
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(8.dp))
+            if (completedRun != null) {
+                AlarmFinishedPane(
+                    userName = AppRepository.state.value.userName,
+                    onViewSummary = onOpenHome,
+                    onBackHome = onOpenHome
+                )
+                Spacer(Modifier.height(20.dp))
+                return@Column
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.VolumeUp, null, tint = TazAmber, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
@@ -506,41 +520,161 @@ private fun AlarmChallengeScreen(
 }
 
 @Composable
-private fun SunriseHorizon(progress: Float) {
+private fun SunriseLandscape(progress: Float, finished: Boolean = false) {
     val stars = remember {
-        List(42) { Offset(Random.nextFloat(), Random.nextFloat() * .58f) }
+        List(42) { Offset(Random.nextFloat(), Random.nextFloat() * .45f) }
     }
     Canvas(Modifier.fillMaxSize()) {
-        val eased = FastOutSlowInEasing.transform(progress.coerceIn(0f, 1f))
-        val top = lerp(Color(0xFF020817), Color(0xFF86B9DD), eased)
-        val midNight = Color(0xFF101B4A)
-        val purple = Color(0xFF6D3F88)
-        val red = Color(0xFFE25A55)
-        val orange = Color(0xFFFFA43B)
-        val daylight = Color(0xFFFFE2A8)
-        val mid = when {
-            eased < .25f -> lerp(midNight, purple, eased / .25f)
-            eased < .50f -> lerp(purple, red, (eased - .25f) / .25f)
-            eased < .75f -> lerp(red, orange, (eased - .50f) / .25f)
-            else -> lerp(orange, daylight, (eased - .75f) / .25f)
-        }
-        val horizon = lerp(Color(0xFF23142D), Color(0xFFFFD785), eased)
-        drawRect(Brush.verticalGradient(listOf(top, mid, horizon), endY = size.height * .82f))
+        val eased = if (finished) 1f else FastOutSlowInEasing.transform(progress.coerceIn(0f, 1f))
+        val top = lerp(Color(0xFF04123A), Color(0xFFB9E0FF), eased)
+        val upperMid = lerp(Color(0xFF1B225C), Color(0xFFF6D3A2), eased)
+        val lowerMid = lerp(Color(0xFF35204A), Color(0xFFFFB06F), eased)
+        val horizon = lerp(Color(0xFF4B2559), Color(0xFFFFE8A6), eased)
+        drawRect(Brush.verticalGradient(listOf(top, upperMid, lowerMid, horizon), endY = size.height * .78f))
+
         stars.forEachIndexed { index, star ->
-            val alpha = ((1f - eased * 1.5f) * (.35f + (index % 5) * .12f)).coerceIn(0f, 1f)
+            val alpha = ((1f - eased * 1.4f) * (.30f + (index % 5) * .10f)).coerceIn(0f, 1f)
             if (alpha > 0f) drawCircle(Color.White.copy(alpha), radius = if (index % 7 == 0) 2.2f else 1.2f, center = Offset(star.x * size.width, star.y * size.height))
         }
-        val glowAlpha = (.15f + eased * .85f).coerceIn(0f, 1f)
+
+        val sunCenter = Offset(size.width * .5f, lerp(size.height * .78f, size.height * .38f, eased))
+        val sunRadius = lerp(size.width * .035f, size.width * .09f, eased)
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFFFFF3C4).copy(glowAlpha), Color(0xFFFFA12E).copy(glowAlpha * .4f), Color.Transparent),
-                center = Offset(size.width * .72f, size.height * .72f),
-                radius = size.width * (.15f + eased * .45f)
+                colors = listOf(Color(0xFFFFF1B8).copy(alpha = .85f), Color(0xFFFFC56B).copy(alpha = .35f), Color.Transparent),
+                center = sunCenter,
+                radius = sunRadius * 4.5f
             ),
-            radius = size.width * (.15f + eased * .45f),
-            center = Offset(size.width * .72f, size.height * .72f)
+            radius = sunRadius * 4.5f,
+            center = sunCenter
         )
-        drawCircle(Color(0xFFFFF4D0).copy(alpha = eased), radius = 12f + eased * 20f, center = Offset(size.width * .72f, size.height * .72f))
+        drawCircle(Color(0xFFFFF4D0).copy(alpha = .95f), radius = sunRadius, center = sunCenter)
+
+        // distant mountains
+        drawPath(
+            path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, size.height * .70f)
+                lineTo(size.width * .12f, size.height * .58f)
+                lineTo(size.width * .22f, size.height * .64f)
+                lineTo(size.width * .34f, size.height * .54f)
+                lineTo(size.width * .47f, size.height * .65f)
+                lineTo(size.width * .59f, size.height * .56f)
+                lineTo(size.width * .74f, size.height * .63f)
+                lineTo(size.width * .90f, size.height * .50f)
+                lineTo(size.width, size.height * .66f)
+                lineTo(size.width, size.height)
+                lineTo(0f, size.height)
+                close()
+            },
+            color = lerp(Color(0xFF17254F), Color(0xFF8AA1BE), eased)
+        )
+        // nearer valley walls
+        drawPath(
+            path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, size.height)
+                lineTo(0f, size.height * .78f)
+                lineTo(size.width * .08f, size.height * .73f)
+                lineTo(size.width * .17f, size.height * .67f)
+                lineTo(size.width * .25f, size.height * .74f)
+                lineTo(size.width * .33f, size.height * .80f)
+                lineTo(size.width * .40f, size.height)
+                close()
+            },
+            color = lerp(Color(0xFF0D1637), Color(0xFF5C7C4B), eased)
+        )
+        drawPath(
+            path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(size.width, size.height)
+                lineTo(size.width, size.height * .77f)
+                lineTo(size.width * .92f, size.height * .72f)
+                lineTo(size.width * .84f, size.height * .66f)
+                lineTo(size.width * .74f, size.height * .73f)
+                lineTo(size.width * .66f, size.height * .80f)
+                lineTo(size.width * .58f, size.height)
+                close()
+            },
+            color = lerp(Color(0xFF10193B), Color(0xFF668651), eased)
+        )
+
+        // lake / water
+        val lakeTop = size.height * .72f
+        drawPath(
+            path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(size.width * .28f, size.height)
+                quadraticTo(size.width * .50f, lakeTop, size.width * .72f, size.height)
+                close()
+            },
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0xFFB5D7F5).copy(alpha = .65f * eased + .10f),
+                    Color(0xFF3E5B86).copy(alpha = .85f)
+                ),
+                startY = lakeTop,
+                endY = size.height
+            )
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(Color(0xFFFFE7A6).copy(alpha = .75f * eased), Color.Transparent),
+                startY = sunCenter.y,
+                endY = size.height
+            ),
+            topLeft = Offset(size.width * .47f, sunCenter.y),
+            size = androidx.compose.ui.geometry.Size(size.width * .06f, size.height - sunCenter.y)
+        )
+
+        // meadow foreground
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(lerp(Color(0xFF2A2B24), Color(0xFF6D8B42), eased), lerp(Color(0xFF15130F), Color(0xFF88A34E), eased)),
+                startY = size.height * .82f,
+                endY = size.height
+            ),
+            topLeft = Offset(0f, size.height * .82f),
+            size = androidx.compose.ui.geometry.Size(size.width, size.height * .18f)
+        )
+        // a few meadow flowers / highlights
+        repeat(40) { i ->
+            val x = (i / 39f) * size.width
+            val y = size.height * (.86f + (i % 5) * .025f)
+            drawCircle(
+                color = listOf(Color(0xFFFFC56B), Color(0xFFE8E3FF), Color(0xFFFF8A7A), Color(0xFFBEE0FF))[i % 4].copy(alpha = .7f),
+                radius = 2.2f + (i % 3),
+                center = Offset(x, y)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlarmFinishedPane(userName: String, onViewSummary: () -> Unit, onBackHome: () -> Unit) {
+    Spacer(Modifier.height(24.dp))
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = .95f)),
+        shape = RoundedCornerShape(26.dp),
+        modifier = Modifier.fillMaxWidth(.88f)
+    ) {
+        Column(
+            Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier.size(76.dp).background(Color(0xFFEAF8EB), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen, modifier = Modifier.size(48.dp))
+            }
+            Text("Alarm Finished!", color = TazNavy, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+            Text("Well done, $userName.", color = Color(0xFF51627A), fontSize = 18.sp)
+            Text("You're up and unstoppable.", color = Color(0xFF51627A), fontSize = 18.sp)
+            Button(onClick = onViewSummary, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                Text("View Summary", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(onClick = onBackHome, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Text("Back to Home", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
