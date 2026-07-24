@@ -97,6 +97,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -415,6 +416,16 @@ private fun NextAlarmCard(alarm: AlarmConfig, nextAt: ZonedDateTime, onEdit: () 
                         )
                     }
                 }
+            }
+            FilledTonalButton(
+                onClick = {
+                    AlarmScheduler.scheduleTest(context, alarm.id, 3_000L)
+                    Toast.makeText(context, "Test alarm will start in 3 seconds", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.PlayArrow, null)
+                Text(" Test Alarm")
             }
         }
     }
@@ -749,6 +760,8 @@ private fun NumberPickerColumn(
     format: (Int) -> String = { it.toString() },
     onValueChange: (Int) -> Unit
 ) {
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentFormat by rememberUpdatedState(format)
     AndroidView(
         factory = { context ->
             NumberPicker(context).apply {
@@ -756,14 +769,15 @@ private fun NumberPickerColumn(
                 maxValue = range.last
                 wrapSelectorWheel = true
                 descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
-                setFormatter { format(it) }
-                setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
+                setFormatter { currentFormat(it) }
+                setOnValueChangedListener { _, _, newVal -> currentOnValueChange(newVal) }
             }
         },
         update = {
             it.minValue = range.first
             it.maxValue = range.last
-            it.setFormatter { v -> format(v) }
+            it.setFormatter { v -> currentFormat(v) }
+            it.setOnValueChangedListener { _, _, newVal -> currentOnValueChange(newVal) }
             if (it.value != value) it.value = value
         },
         modifier = Modifier.width(84.dp).height(170.dp)
@@ -772,6 +786,7 @@ private fun NumberPickerColumn(
 
 @Composable
 private fun NumberPickerLabels(value: Int, values: List<String>, onValueChange: (Int) -> Unit) {
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
     AndroidView(
         factory = { context ->
             NumberPicker(context).apply {
@@ -780,7 +795,7 @@ private fun NumberPickerLabels(value: Int, values: List<String>, onValueChange: 
                 wrapSelectorWheel = false
                 descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
                 displayedValues = values.toTypedArray()
-                setOnValueChangedListener { _, _, newVal -> onValueChange(newVal) }
+                setOnValueChangedListener { _, _, newVal -> currentOnValueChange(newVal) }
             }
         },
         update = {
@@ -788,6 +803,7 @@ private fun NumberPickerLabels(value: Int, values: List<String>, onValueChange: 
             it.minValue = 0
             it.maxValue = values.lastIndex
             it.displayedValues = values.toTypedArray()
+            it.setOnValueChangedListener { _, _, newVal -> currentOnValueChange(newVal) }
             if (it.value != value) it.value = value
         },
         modifier = Modifier.width(92.dp).height(170.dp)
@@ -1393,7 +1409,7 @@ private fun SettingsScreen(appState: AppState, padding: PaddingValues) {
         OutlinedButton(onClick = { AlarmScheduler.scheduleAll(context) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.RestartAlt, null); Text(" Reschedule All Alarms")
         }
-        Text("TAZLARM v2.2.8", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("TAZLARM v2.2.9", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(8.dp))
     }
 }

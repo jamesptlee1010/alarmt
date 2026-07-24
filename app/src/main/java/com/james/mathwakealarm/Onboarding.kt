@@ -1,6 +1,14 @@
 package com.james.mathwakealarm
 
+import android.Manifest
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,11 +30,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.QuestionMark
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,6 +54,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +67,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @Composable
@@ -71,6 +87,36 @@ fun OnboardingScreen(appState: AppState) {
     var addStepMenu by remember { mutableStateOf(false) }
     var editingStep by remember { mutableStateOf<RoutineStep?>(null) }
     var captureUri by remember { mutableStateOf<Uri?>(null) }
+    var permissionRefresh by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) permissionRefresh += 1
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permissionRefresh += 1
+    }
+
+    val permissionRefreshSnapshot = permissionRefresh
+    val alarmManager = context.getSystemService(AlarmManager::class.java)
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+    val powerManager = context.getSystemService(PowerManager::class.java)
+    val notificationsAllowed = permissionRefreshSnapshot.let {
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    }
+    val exactAllowed = permissionRefreshSnapshot.let {
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+    }
+    val fullScreenAllowed = permissionRefreshSnapshot.let {
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || notificationManager.canUseFullScreenIntent()
+    }
+    val batteryUnrestricted = permissionRefreshSnapshot.let {
+        powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    }
 
     val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
@@ -155,7 +201,7 @@ fun OnboardingScreen(appState: AppState) {
                 BrandHeader()
                 Spacer(Modifier.height(24.dp))
                 LinearProgressIndicator(
-                    progress = { (page + 1) / 4f },
+                    progress = { (page + 1) / 5f },
                     modifier = Modifier.fillMaxWidth(),
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
@@ -163,6 +209,68 @@ fun OnboardingScreen(appState: AppState) {
 
                 when (page) {
                     0 -> {
+                        Icon(Icons.Outlined.Settings, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(16.dp))
+                        Text("Prepare TAZLARM", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            "Allow the essential alarm permissions now so TAZLARM can ring reliably and open over the lock screen.",
+                            modifier = Modifier.padding(top = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(22.dp))
+                        OnboardingPermissionCard(
+                            icon = Icons.Outlined.NotificationsActive,
+                            title = "Alarm notifications",
+                            ready = notificationsAllowed,
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        OnboardingPermissionCard(
+                            icon = Icons.Outlined.Alarm,
+                            title = "Exact alarm access",
+                            ready = exactAllowed,
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}")))
+                                }
+                            }
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        OnboardingPermissionCard(
+                            icon = Icons.Outlined.NotificationsActive,
+                            title = "Full-screen lock-screen alarm",
+                            ready = fullScreenAllowed,
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                    context.startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}")))
+                                }
+                            }
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        OnboardingPermissionCard(
+                            icon = Icons.Outlined.BatteryChargingFull,
+                            title = "Battery optimisation",
+                            ready = batteryUnrestricted,
+                            statusText = if (batteryUnrestricted) "Unrestricted" else "Open settings and choose Unrestricted / Don't optimise",
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}")))
+                                }.onFailure {
+                                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                }
+                            }
+                        )
+                        Text(
+                            "You can continue and return to these checks later in Settings.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
+                    1 -> {
                         Icon(Icons.Outlined.Alarm, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(16.dp))
                         Text("Welcome to TAZLARM", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold)
@@ -181,7 +289,7 @@ fun OnboardingScreen(appState: AppState) {
                             singleLine = true
                         )
                     }
-                    1 -> {
+                    2 -> {
                         Text("Create your first alarm", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
                             "Choose a time, then optionally select repeat days. If no days are selected, the alarm will run once.",
@@ -244,7 +352,7 @@ fun OnboardingScreen(appState: AppState) {
                             Text(" Add This Alarm and Create Another")
                         }
                     }
-                    2 -> {
+                    3 -> {
                         Text("Prepare your routine", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
                             "Start with a blank routine. Add the steps you want to complete before the alarm stops.",
@@ -347,7 +455,7 @@ fun OnboardingScreen(appState: AppState) {
                             }
                         }
                     }
-                    else -> {
+                    4 -> {
                         Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen)
                         Spacer(Modifier.height(14.dp))
                         Text("Everything is ready", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
@@ -385,7 +493,7 @@ fun OnboardingScreen(appState: AppState) {
                     }
                     Button(
                         onClick = {
-                            if (page < 3) {
+                            if (page < 4) {
                                 page++
                             } else {
                                 val alarms = (queuedAlarms + draftAlarm())
@@ -394,15 +502,41 @@ fun OnboardingScreen(appState: AppState) {
                             }
                         },
                         enabled = when (page) {
-                            0 -> name.isNotBlank()
-                            2 -> routineSteps.isNotEmpty()
+                            1 -> name.isNotBlank()
+                            3 -> routineSteps.isNotEmpty()
                             else -> true
                         },
                         modifier = Modifier.weight(1f)
-                    ) { Text(if (page == 3) "Finish Setup" else "Continue") }
+                    ) { Text(if (page == 4) "Finish Setup" else "Continue") }
                 }
                 Spacer(Modifier.height(26.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingPermissionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    ready: Boolean,
+    statusText: String = if (ready) "Allowed" else "Tap to allow",
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .55f)),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold)
+                Text(statusText, color = if (ready) TazGreen else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            }
+            if (ready) Icon(Icons.Outlined.CheckCircle, null, tint = TazGreen)
         }
     }
 }

@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.2.8 / 228", 'versionCode = 228' in build and 'versionName = "2.2.8"' in build)
+check("Version 2.2.9 / 229", 'versionCode = 229' in build and 'versionName = "2.2.9"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -123,7 +123,7 @@ check("Old barcode storage remains compatible", "if (!value.startsWith" in main_
 check("Routine presets preserve registrations", "preserveRoutineRegistrations" in app_ui and "barcodeValue = configured.barcodeValue" in app_ui)
 check("Live photo capture", "ActivityResultContracts.TakePicture" in alarm_ui and "ImageSimilarity.bestScore" in alarm_ui)
 check("50-question irreversible penalty", "questionTarget = if (penaltyMode) 50" in alarm_ui and "cannot return" in alarm_ui)
-check("Question topic coverage", all(topic in main_source for topic in ["WORLD_WAR_II", "CARL_JUNG", "TWENTIETH_CENTURY", "GEOGRAPHY", "SCIENCE", "SPORT", "LOGIC"]))
+check("Question topic coverage", all(topic in main_source for topic in ["WORLD_WAR_II", "CARL_JUNG", "TWENTIETH_CENTURY", "GEOGRAPHY", "SCIENCE", "SPORT", "LOGIC", "DANCE_MOMS", "TEEN_MOM_2", "MORMON_WIVES"]))
 check("Progress and reliability logging", "reliabilityEvents" in main_source and "ProgressScreen" in app_ui)
 check("Two-minute screen-off test", "120_000L" in app_ui and "scheduleTest" in scheduler)
 check(
@@ -180,6 +180,36 @@ check(
     and all(label in app_ui for label in ['Text("ONCE")', 'Text("WEEKDAYS")', 'Text("CUSTOM")'])
     and 'label = { Text("Hour") }' not in app_ui
     and 'label = { Text("Minute") }' not in app_ui,
+)
+
+check(
+    "Wheel picker retains current hour when minute or AM/PM changes",
+    "rememberUpdatedState(onValueChange)" in app_ui
+    and "currentOnValueChange(newVal)" in app_ui
+    and app_ui.count("setOnValueChangedListener") >= 4,
+)
+check(
+    "Fast Test Alarm restored",
+    'Text(" Test Alarm")' in app_ui
+    and "scheduleTest(context, alarm.id, 3_000L)" in app_ui
+    and "Test alarm will start in 3 seconds" in app_ui,
+)
+check(
+    "First-launch permission setup",
+    'Text("Prepare TAZLARM"' in onboarding
+    and "POST_NOTIFICATIONS" in onboarding
+    and "ACTION_REQUEST_SCHEDULE_EXACT_ALARM" in onboarding
+    and "ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT" in onboarding
+    and "ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" in onboarding,
+)
+question_engine = (ROOT / "app/src/main/java/com/james/mathwakealarm/QuestionEngine.kt").read_text(encoding="utf-8")
+question_test = (ROOT / "app/src/test/java/com/james/mathwakealarm/QuestionEngineTest.kt").read_text(encoding="utf-8")
+check(
+    "Fifty reality-TV questions per selected topic",
+    question_engine.count("Topic.DANCE_MOMS") == 50
+    and question_engine.count("Topic.TEEN_MOM_2") == 50
+    and question_engine.count("Topic.MORMON_WIVES") == 50
+    and "realityTopicsHaveFiftyQuestionsEach" in question_test,
 )
 
 check(

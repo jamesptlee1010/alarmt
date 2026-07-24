@@ -25,4 +25,11 @@ class QuestionEngineTest {
         val question = QuestionEngine.Question("test", Topic.GEOGRAPHY, "Capital?", "Canberra")
         assertTrue(QuestionEngine.isCorrect(question, "  CANBERRA! "))
     }
+    @Test
+    fun realityTopicsHaveFiftyQuestionsEach() {
+        assertTrue(QuestionEngine.questionCountForTest(Topic.DANCE_MOMS) == 50)
+        assertTrue(QuestionEngine.questionCountForTest(Topic.TEEN_MOM_2) == 50)
+        assertTrue(QuestionEngine.questionCountForTest(Topic.MORMON_WIVES) == 50)
+    }
+
 }

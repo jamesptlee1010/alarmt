@@ -21,7 +21,8 @@ enum class Topic(val displayName: String) {
     GENERAL_KNOWLEDGE("General Knowledge"),
     LOGIC("Logic"),
     DANCE_MOMS("Dance Moms"),
-    TEEN_MOM_2("Teen Mom 2")
+    TEEN_MOM_2("Teen Mom 2"),
+    MORMON_WIVES("The Secret Lives of Mormon Wives")
 }
 
 @Serializable

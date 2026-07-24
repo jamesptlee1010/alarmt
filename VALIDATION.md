@@ -1,16 +1,17 @@
-# TAZLARM v2.2.8 validation
+# TAZLARM v2.2.9 validation
 
-The package validator passes 73/73 structural and targeted source checks.
+Package validation passes **77/77 structural checks**.
 
-Validated changes include:
-- versionCode 228 / versionName 2.2.8
-- two-minute sunrise minimum and migration of older alarm settings
-- initial SILENCE gate before the first task appears
-- 12-second quiet window for every newly displayed question
-- 20-second barcode and 30-second photo quiet windows
-- wheel-scroller time selection in onboarding and Edit Alarm
-- simplified Edit Alarm time/repeat flow
-- lock-screen full-screen alarm presentation and permission guidance
-- release signing keystore readability
+Validated additions:
 
-The included GitHub Actions workflow remains the authoritative full Android compile, unit-test, signing and APK verification step.
+- Wheel picker callbacks use current Compose state, preventing minute or AM/PM changes from resetting the selected hour.
+- Fast Test Alarm action schedules the selected alarm after three seconds.
+- First-launch permission setup provides direct controls for notifications, exact alarms, full-screen lock-screen alarms and battery optimisation.
+- Dance Moms contains 50 fixed questions.
+- Teen Mom 2 contains 50 fixed questions.
+- The Secret Lives of Mormon Wives contains 50 fixed questions.
+- Unit tests assert the three 50-question totals.
+- Version is 2.2.9 / versionCode 229.
+- GitHub artifact name is TAZLARM-v2.2.9-installable-APK.
+
+The current execution environment does not contain a Gradle executable or Android SDK, so the included GitHub Actions workflow remains the authoritative full Android compilation and APK test.
