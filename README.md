@@ -1,30 +1,10 @@
-# TAZLARM v2.3.2
+# TAZLARM v2.3.3
 
-Android sunrise alarm application.
+This package contains the full Android Studio project for TAZLARM.
 
-- Application ID: `com.james.mathwakealarm`
-- Version: 2.3.2 (231)
-- Minimum Android version: API 26
-- Target/compile SDK: 36
-
-## Current highlights
-
-- Scenic night-to-day alarm background with mountains, lake, meadow and rising sun.
-- Live alarm logo and wordmark positioned slightly lower for improved spacing.
-- Dedicated **Alarm Finished** sunrise screen after the final routine step.
-- **View Summary** and **Back to Home** completion actions.
-- Initial **SILENCE** gate and 12-second quiet period for each question.
-- Barcode and photo quiet periods of 20 and 30 seconds.
-- Wheel-scroller time picker with stable hour/minute/AM-PM state.
-- Three-second Test Alarm.
-- First-launch permissions setup for reliable alarm operation.
-- 50 questions each for Dance Moms, Teen Mom 2 and The Secret Lives of Mormon Wives.
-
-Run `python tools/validate_package.py` before uploading. The included GitHub Actions workflow performs the authoritative Android unit-test and release build.
-
-
-## v2.3.2 compile correction
-
-- Replaced the two invalid numeric `lerp()` calls in `SunriseLandscape` with explicit float interpolation.
-- Preserves the scenic sun movement and size animation.
-- Adds a validator regression check so this exact Kotlin compiler error is detected before packaging.
+Included in v2.3.3:
+- cleaner Edit Alarm dialog
+- redesigned Configure Step dialog
+- slider-based question-count selection
+- at-least-one-topic protection
+- newly created alarms save as enabled

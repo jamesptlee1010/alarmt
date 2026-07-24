@@ -88,6 +88,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -660,49 +661,90 @@ private fun AlarmEditorDialog(alarm: AlarmConfig, onDismiss: () -> Unit, onSave:
     var days by remember(alarm.id) { mutableStateOf(alarm.days) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth()) {
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
             Column(
-                Modifier.verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Edit Alarm", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                Text(
-                    "Alarm in ${timeUntilAlarmText(hour24, minute, days)}",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                WheelTimePicker(
-                    hour24 = hour24,
-                    minute = minute,
-                    onTimeChange = { h, m ->
-                        hour24 = h
-                        minute = m
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text("Repeat", fontWeight = FontWeight.Bold)
-                RepeatPresetRow(
-                    selectedDays = days,
-                    onSelectOnce = { days = emptyList() },
-                    onSelectWeekdays = { days = listOf(1, 2, 3, 4, 5) },
-                    onSelectCustom = { if (days.isEmpty() || days == listOf(1, 2, 3, 4, 5)) days = listOf(1) }
-                )
-                if (days.isNotEmpty() && days != listOf(1, 2, 3, 4, 5)) {
-                    AlarmDaySelector(days) { day -> days = if (day in days) (days - day).sorted() else (days + day).sorted() }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Edit Alarm", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = TazNavy)
+                        Text(
+                            "Alarm in ${timeUntilAlarmText(hour24, minute, days)}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    FilledTonalButton(onClick = onDismiss) {
+                        Icon(Icons.Outlined.Close, null)
+                        Text(" Close")
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+
+                Card(
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = TazBlueLight),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Pick a time", fontWeight = FontWeight.Bold, color = TazNavy)
+                        WheelTimePicker(
+                            hour24 = hour24,
+                            minute = minute,
+                            onTimeChange = { h, m ->
+                                hour24 = h
+                                minute = m
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = TazBlueLight),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Repeat", fontWeight = FontWeight.Bold, color = TazNavy)
+                        RepeatPresetRow(
+                            selectedDays = days,
+                            onSelectOnce = { days = emptyList() },
+                            onSelectWeekdays = { days = listOf(1, 2, 3, 4, 5) },
+                            onSelectCustom = { if (days.isEmpty() || days == listOf(1, 2, 3, 4, 5)) days = listOf(1) }
+                        )
+                        if (days.isNotEmpty() && days != listOf(1, 2, 3, 4, 5)) {
+                            AlarmDaySelector(days) { day ->
+                                days = if (day in days) (days - day).sorted() else (days + day).sorted()
+                            }
+                        }
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
                     Button(
                         onClick = {
                             onSave(
                                 alarm.copy(
                                     hour = hour24,
                                     minute = minute,
-                                    days = days
+                                    days = days,
+                                    enabled = if (!alarm.enabled && alarm.label == "New Alarm") true else alarm.enabled
                                 )
                             )
                         },
                         modifier = Modifier.weight(1f)
-                    ) { Text("Save Alarm") }
+                    ) {
+                        Text("Save Alarm")
+                    }
                 }
             }
         }
@@ -1104,40 +1146,145 @@ fun StepEditorDialog(
 ) {
     var type by remember(step.id) { mutableStateOf(step.type) }
     var title by remember(step.id, step.title) { mutableStateOf(step.title) }
-    var count by remember(step.id) { mutableStateOf(step.questionsRequired.coerceAtLeast(2).toString()) }
-    var topics by remember(step.id) { mutableStateOf(step.topics) }
+    var count by remember(step.id) { mutableIntStateOf(step.questionsRequired.coerceAtLeast(2).coerceAtMost(10)) }
+    var topics by remember(step.id) { mutableStateOf(step.topics.ifEmpty { listOf(Topic.MATHS) }) }
+    var topicMessage by remember(step.id) { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-                Text("Configure Step", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
-                Text("Step type", fontWeight = FontWeight.Bold)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .background(TazBlueLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            when (type) {
+                                StepType.QUESTIONS -> Icons.Outlined.QuestionMark
+                                StepType.BARCODE -> Icons.Outlined.QrCodeScanner
+                                StepType.PHOTO -> Icons.Outlined.CameraAlt
+                            },
+                            null,
+                            tint = TazBlue
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Configure Step", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = TazNavy)
+                        Text("Set up exactly what this wake-up step should do.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, "Close") }
+                }
+
+                Text("Step type", fontWeight = FontWeight.Bold, color = TazNavy)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     StepType.entries.forEach { option ->
-                        FilterChip(selected = type == option, onClick = { type = option }, label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) })
+                        val selected = type == option
+                        OutlinedCard(
+                            modifier = Modifier.weight(1f).clickable { type = option },
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = if (selected) TazBlueLight else MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    when (option) {
+                                        StepType.QUESTIONS -> Icons.Outlined.QuestionMark
+                                        StepType.BARCODE -> Icons.Outlined.QrCodeScanner
+                                        StepType.PHOTO -> Icons.Outlined.CameraAlt
+                                    },
+                                    null,
+                                    tint = if (selected) TazBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    when (option) {
+                                        StepType.QUESTIONS -> "Questions"
+                                        StepType.BARCODE -> "Barcode"
+                                        StepType.PHOTO -> "Photo"
+                                    },
+                                    color = if (selected) TazBlue else TazNavy,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
+
                 if (type != StepType.BARCODE) {
-                    OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Step name") }, modifier = Modifier.fillMaxWidth())
+                    Text("Step name", fontWeight = FontWeight.Bold, color = TazNavy)
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text(if (type == StepType.QUESTIONS) "Answer Questions" else "Verify Photo") }
+                    )
                 }
+
                 when (type) {
                     StepType.QUESTIONS -> {
-                        OutlinedTextField(
-                            value = count,
-                            onValueChange = { count = it.filter(Char::isDigit).take(2) },
-                            label = { Text("Correct answers required") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = TazBlueLight),
                             modifier = Modifier.fillMaxWidth()
-                        )
-                        Text("Question topics", fontWeight = FontWeight.Bold)
-                        Column {
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("Correct answers required", fontWeight = FontWeight.Bold, color = TazNavy)
+                                Text(count.toString(), fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = TazBlue)
+                                Slider(
+                                    value = count.toFloat(),
+                                    onValueChange = { count = it.toInt().coerceIn(1, 10) },
+                                    valueRange = 1f..10f,
+                                    steps = 8
+                                )
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    (1..10).forEach { value ->
+                                        Text(
+                                            value.toString(),
+                                            fontSize = 12.sp,
+                                            color = if (value == count) TazBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Text("Question topics", fontWeight = FontWeight.Bold, color = TazNavy)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Topic.entries.chunked(3).forEach { rowTopics ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     rowTopics.forEach { topic ->
+                                        val selected = topic in topics
                                         FilterChip(
-                                            selected = topic in topics,
-                                            onClick = { topics = if (topic in topics) topics - topic else topics + topic },
-                                            label = { Text(topic.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                            selected = selected,
+                                            onClick = {
+                                                topicMessage = false
+                                                topics = when {
+                                                    selected && topics.size == 1 -> {
+                                                        topicMessage = true
+                                                        topics
+                                                    }
+                                                    selected -> topics - topic
+                                                    else -> topics + topic
+                                                }
+                                            },
+                                            label = { Text(topic.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                                             modifier = Modifier.weight(1f)
                                         )
                                     }
@@ -1145,50 +1292,80 @@ fun StepEditorDialog(
                                 }
                             }
                         }
+                        if (topicMessage) {
+                            Text("Choose at least one topic.", color = TazBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        }
                     }
                     StepType.BARCODE -> {
                         val savedBarcodes = step.savedBarcodeValues()
-                        Text("Scan Barcode", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            if (savedBarcodes.isEmpty()) "No barcodes registered" else "${savedBarcodes.size} accepted barcode${if (savedBarcodes.size == 1) "" else "s"}",
-                            color = if (savedBarcodes.isEmpty()) TazAmber else TazGreen
-                        )
-                        savedBarcodes.forEachIndexed { index, _ ->
-                            Text("Barcode ${index + 1} saved", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = TazBlueLight),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Scan Barcode", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TazNavy)
+                                Text(
+                                    if (savedBarcodes.isEmpty()) "No barcodes registered yet" else "${savedBarcodes.size} accepted barcode${if (savedBarcodes.size == 1) "" else "s"}",
+                                    color = if (savedBarcodes.isEmpty()) TazAmber else TazGreen
+                                )
+                                savedBarcodes.forEachIndexed { index, _ ->
+                                    Text("Barcode ${index + 1} saved", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                OutlinedButton(onClick = onScan, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Outlined.QrCodeScanner, null)
+                                    Text(if (savedBarcodes.isEmpty()) " Add Barcode" else " Add Another Barcode")
+                                }
+                                Text("Any one saved barcode can complete this step when the alarm goes off.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
-                        OutlinedButton(onClick = onScan, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Outlined.QrCodeScanner, null)
-                            Text(if (savedBarcodes.isEmpty()) " Add Barcode" else " Add Another Barcode")
-                        }
-                        Text("Any one saved barcode can complete this step when the alarm goes off.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     StepType.PHOTO -> {
-                        Text("${step.referenceUris.size} reference photos", color = if (step.referenceUris.size >= 3) TazGreen else TazAmber)
-                        OutlinedButton(onClick = onCapture, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Outlined.CameraAlt, null); Text(" Add Live Reference Photo")
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = TazBlueLight),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Verify Photo", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TazNavy)
+                                Text("${step.referenceUris.size} reference photos", color = if (step.referenceUris.size >= 3) TazGreen else TazAmber)
+                                OutlinedButton(onClick = onCapture, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Outlined.CameraAlt, null)
+                                    Text(" Add Live Reference Photo")
+                                }
+                                Text("Add 3–5 photos from slightly different angles and lighting.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
-                        Text("Add 3–5 photos from slightly different angles and lighting.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
                     Button(
                         onClick = {
-                            onSave(
-                                step.copy(
-                                    type = type,
-                                    title = when (type) {
-                                        StepType.BARCODE -> "Scan Barcode"
-                                        StepType.QUESTIONS -> title.ifBlank { "Answer Questions" }
-                                        StepType.PHOTO -> title.ifBlank { "Verify Photo" }
-                                    },
-                                    questionsRequired = if (type == StepType.QUESTIONS) count.toIntOrNull()?.coerceIn(1, 20) ?: 2 else 0,
-                                    topics = if (type == StepType.QUESTIONS) topics.ifEmpty { listOf(Topic.MATHS) } else emptyList()
+                            if (type == StepType.QUESTIONS && topics.isEmpty()) {
+                                topicMessage = true
+                            } else {
+                                onSave(
+                                    step.copy(
+                                        type = type,
+                                        title = when (type) {
+                                            StepType.BARCODE -> "Scan Barcode"
+                                            StepType.QUESTIONS -> title.ifBlank { "Answer Questions" }
+                                            StepType.PHOTO -> title.ifBlank { "Verify Photo" }
+                                        },
+                                        questionsRequired = if (type == StepType.QUESTIONS) count.coerceIn(1, 10) else 0,
+                                        topics = if (type == StepType.QUESTIONS) topics.ifEmpty { listOf(Topic.MATHS) } else emptyList()
+                                    )
                                 )
-                            )
+                            }
                         },
                         modifier = Modifier.weight(1f)
-                    ) { Text("Save Step") }
+                    ) {
+                        Text("Save Step")
+                    }
                 }
             }
         }
