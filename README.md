@@ -1,10 +1,11 @@
-# TAZLARM v2.3.3
+# TAZLARM v2.3.4
 
-This package contains the full Android Studio project for TAZLARM.
+Complete Android project.
 
-Included in v2.3.3:
-- cleaner Edit Alarm dialog
-- redesigned Configure Step dialog
-- slider-based question-count selection
-- at-least-one-topic protection
-- newly created alarms save as enabled
+## v2.3.4
+- Refreshed Edit Alarm layout with clearer pale-blue time and repeat sections.
+- Redesigned Configure Step layout to match the wider TAZLARM visual system.
+- Slider-based selection for 1–10 required correct answers.
+- The final selected topic cannot be deselected; older empty topic lists fall back to Maths.
+- Newly created alarms become enabled when saved and are scheduled immediately.
+- Package validator updated and executed against the final ZIP.

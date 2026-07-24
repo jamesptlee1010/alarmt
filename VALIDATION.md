@@ -1,4 +1,4 @@
-TAZLARM package validation: 80/80 checks passed
+TAZLARM package validation: 84/84 checks passed
 [PASS] Required file: .github/workflows/build-tazalarm.yml
 [PASS] Required file: app/build.gradle.kts
 [PASS] Required file: app/src/main/AndroidManifest.xml
@@ -14,7 +14,7 @@ TAZLARM package validation: 80/80 checks passed
 [PASS] Required file: personal-release.keystore
 [PASS] All Android XML parses — 20 XML files
 [PASS] Application ID retained
-[PASS] Version 2.3.2 / 232
+[PASS] Version 2.3.4 / 234
 [PASS] TAZLARM app label
 [PASS] Alarm notification channel description
 [PASS] Exact alarm permission
@@ -72,6 +72,10 @@ TAZLARM package validation: 80/80 checks passed
 [PASS] Initial SILENCE gate starts the routine
 [PASS] Wheel scroller time picker in setup and Edit Alarm
 [PASS] Wheel picker retains current hour when minute or AM/PM changes
+[PASS] Polished Edit Alarm layout
+[PASS] Question count uses a slider
+[PASS] At least one question topic is enforced
+[PASS] New alarms enable when saved
 [PASS] Fast Test Alarm restored
 [PASS] First-launch permission setup
 [PASS] Fifty reality-TV questions per selected topic

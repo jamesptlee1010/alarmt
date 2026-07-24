@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.3.2 / 232", 'versionCode = 232' in build and 'versionName = "2.3.2"' in build)
+check("Version 2.3.4 / 234", 'versionCode = 234' in build and 'versionName = "2.3.4"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -222,6 +222,31 @@ check(
     "rememberUpdatedState(onValueChange)" in app_ui
     and "currentOnValueChange(newVal)" in app_ui
     and app_ui.count("setOnValueChangedListener") >= 4,
+)
+check(
+    "Polished Edit Alarm layout",
+    'Text("Pick a time"' in app_ui
+    and app_ui.count("containerColor = TazBlueLight") >= 4
+    and 'Text("Save Alarm")' in app_ui
+    and 'Icon(Icons.Outlined.Close' in app_ui,
+)
+check(
+    "Question count uses a slider",
+    "Slider(" in app_ui
+    and "valueRange = 1f..10f" in app_ui
+    and "steps = 8" in app_ui
+    and "count.coerceIn(1, 10)" in app_ui,
+)
+check(
+    "At least one question topic is enforced",
+    "selected && topics.size == 1" in app_ui
+    and 'Text("Choose at least one topic."' in app_ui
+    and "topics.ifEmpty { listOf(Topic.MATHS) }" in app_ui,
+)
+check(
+    "New alarms enable when saved",
+    'enabled = if (!alarm.enabled && alarm.label == "New Alarm") true else alarm.enabled' in app_ui
+    and "if (it.enabled) AlarmScheduler.schedule(context, it)" in app_ui,
 )
 check(
     "Fast Test Alarm restored",
