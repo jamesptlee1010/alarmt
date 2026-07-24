@@ -1,9 +1,9 @@
-# TAZLARM v2.3.1
+# TAZLARM v2.3.2
 
 Android sunrise alarm application.
 
 - Application ID: `com.james.mathwakealarm`
-- Version: 2.3.1 (231)
+- Version: 2.3.2 (231)
 - Minimum Android version: API 26
 - Target/compile SDK: 36
 
@@ -21,3 +21,10 @@ Android sunrise alarm application.
 - 50 questions each for Dance Moms, Teen Mom 2 and The Secret Lives of Mormon Wives.
 
 Run `python tools/validate_package.py` before uploading. The included GitHub Actions workflow performs the authoritative Android unit-test and release build.
+
+
+## v2.3.2 compile correction
+
+- Replaced the two invalid numeric `lerp()` calls in `SunriseLandscape` with explicit float interpolation.
+- Preserves the scenic sun movement and size animation.
+- Adds a validator regression check so this exact Kotlin compiler error is detected before packaging.

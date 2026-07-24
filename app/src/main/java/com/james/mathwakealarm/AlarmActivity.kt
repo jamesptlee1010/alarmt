@@ -537,8 +537,9 @@ private fun SunriseLandscape(progress: Float, finished: Boolean = false) {
             if (alpha > 0f) drawCircle(Color.White.copy(alpha), radius = if (index % 7 == 0) 2.2f else 1.2f, center = Offset(star.x * size.width, star.y * size.height))
         }
 
-        val sunCenter = Offset(size.width * .5f, lerp(size.height * .78f, size.height * .38f, eased))
-        val sunRadius = lerp(size.width * .035f, size.width * .09f, eased)
+        val sunCenterY = size.height * .78f + (size.height * .38f - size.height * .78f) * eased
+        val sunCenter = Offset(size.width * .5f, sunCenterY)
+        val sunRadius = size.width * .035f + (size.width * .09f - size.width * .035f) * eased
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(Color(0xFFFFF1B8).copy(alpha = .85f), Color(0xFFFFC56B).copy(alpha = .35f), Color.Transparent),

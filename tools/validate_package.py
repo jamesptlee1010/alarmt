@@ -54,7 +54,7 @@ onboarding = (ROOT / "app/src/main/java/com/james/mathwakealarm/Onboarding.kt").
 main_source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "app/src/main/java").rglob("*.kt"))
 
 check("Application ID retained", 'applicationId = "com.james.mathwakealarm"' in build)
-check("Version 2.3.1 / 231", 'versionCode = 231' in build and 'versionName = "2.3.1"' in build)
+check("Version 2.3.2 / 232", 'versionCode = 232' in build and 'versionName = "2.3.2"' in build)
 check("TAZLARM app label", '<string name="app_name">TAZLARM</string>' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Alarm notification channel description", '<string name="alarm_channel_description">' in (ROOT / "app/src/main/res/values/strings.xml").read_text())
 check("Exact alarm permission", "android.permission.SCHEDULE_EXACT_ALARM" in manifest)
@@ -116,6 +116,13 @@ check(
         "lake / water",
         "meadow foreground",
     ]),
+)
+check(
+    "Scenic renderer uses compile-safe float interpolation",
+    "lerp(size.height" not in alarm_ui
+    and "lerp(size.width" not in alarm_ui
+    and "val sunCenterY =" in alarm_ui
+    and "val sunRadius = size.width * .035f +" in alarm_ui,
 )
 
 check(
